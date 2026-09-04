@@ -1,0 +1,517 @@
+<title>Profil & Questionnaire de risque</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2; --surface:#FFFFFF; --surface-2:#F7F5EC;
+    --ink:#20261F; --muted:#6E6858; --line:#CFC6AC; --line-strong:#B8AD8C;
+    --accent:#96601F; --accent-ink:#FFF8ED; --good:#3F6C4A; --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+      --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+      --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+    --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+    --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink); font-family:'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Fraunces', Georgia, serif; text-wrap:balance; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .proto-banner{ background:var(--ink); color:var(--ground); font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; padding:7px 20px; display:flex; justify-content:space-between; gap:12px; }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+
+  .app-header{ padding:28px 32px 20px; max-width:900px; margin:0 auto; width:100%; }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:27px; font-weight:500; margin:4px 0 4px; }
+  .app-header .sub{ font-size:13.5px; color:var(--muted); max-width:60ch; }
+
+  main{ flex:1; max-width:900px; margin:0 auto; width:100%; padding:0 32px 140px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+
+  .field-row{ display:grid; grid-template-columns:230px 1fr; gap:16px; align-items:start; padding:13px 22px; border-bottom:1px solid var(--line); }
+  .field-row:last-child{ border-bottom:none; }
+  .field-row label{ font-size:13.5px; color:var(--muted); padding-top:8px; }
+  .field-row .field-note{ display:block; font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
+  .field-input{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  select.field-input, input[type=text].field-input, textarea.field-input{ font-family:'Public Sans'; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .field-suffix-wrap{ position:relative; }
+  .field-suffix{ position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); pointer-events:none; }
+  select.field-input{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236E6858'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:26px; }
+
+  .section-head{ padding:16px 22px 12px; display:flex; align-items:baseline; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line-strong); }
+  .section-head h2{ font-size:17px; font-weight:500; margin:0; }
+  .section-head .tag{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-family:'IBM Plex Mono'; }
+
+  .btn{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  .btn-row{ display:flex; gap:10px; padding:16px 22px; justify-content:space-between; }
+
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; font-family:'IBM Plex Mono'; }
+  .pill.prudent{ background:color-mix(in srgb, var(--good) 18%, transparent); color:var(--good); }
+  .pill.equilibre{ background:color-mix(in srgb, var(--accent) 18%, transparent); color:var(--accent); }
+  .pill.dynamique{ background:color-mix(in srgb, #B0442E 18%, transparent); color:#B0442E; }
+
+  [hidden]{ display:none !important; }
+
+  /* ---------- Objectifs list (shared) ---------- */
+  .objectif-item{ display:grid; grid-template-columns:1fr auto auto 28px; gap:12px; align-items:center; padding:12px 22px; border-bottom:1px solid var(--line); }
+  .objectif-item:last-child{ border-bottom:none; }
+  .objectif-item .o-name{ font-weight:600; font-size:13.5px; }
+  .objectif-item .o-type{ font-size:11px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .objectif-item .o-meta{ font-size:12.5px; color:var(--muted); font-family:'IBM Plex Mono'; text-align:right; }
+  .objectif-item .o-del{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; }
+  .objectif-item .o-del:hover{ color:#B0442E; }
+  .objectif-add{ padding:14px 22px; }
+  .objectif-form{ display:grid; grid-template-columns:1fr 140px 140px auto; gap:10px; padding:0 22px 16px; }
+
+  /* ---------- Questionnaire (shared visual language) ---------- */
+  .quiz-q{ padding:18px 22px; border-bottom:1px solid var(--line); }
+  .quiz-q:last-child{ border-bottom:none; }
+  .quiz-q .q-label{ font-size:14px; font-weight:600; margin:0 0 12px; }
+  .quiz-opts{ display:flex; flex-direction:column; gap:8px; }
+  .quiz-opt{ display:flex; align-items:flex-start; gap:10px; border:1px solid var(--line); border-radius:8px; padding:10px 12px; cursor:pointer; }
+  .quiz-opt:hover{ border-color:var(--accent); }
+  .quiz-opt.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .quiz-opt input{ margin-top:2px; accent-color:var(--accent); }
+  .quiz-opt .o-text{ font-size:13px; }
+  .quiz-result{ padding:20px 22px; display:flex; align-items:center; gap:16px; background:var(--surface-2); border-top:1px solid var(--line-strong); }
+  .quiz-result .r-label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+
+  /* ================= VARIANT A — long scrolling form with anchor nav ================= */
+  .anchor-nav{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-bottom:20px; position:sticky; top:0; background:var(--ground); z-index:5; padding-top:4px; }
+  .anchor-nav button{ font-family:'Public Sans'; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; padding:10px 14px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .anchor-nav button.active{ color:var(--accent); border-bottom-color:var(--accent); }
+  .a-section{ margin-bottom:20px; scroll-margin-top:56px; }
+
+  /* ================= VARIANT B — mandatory onboarding wizard ================= */
+  .stepper{ display:flex; align-items:center; gap:0; margin-bottom:22px; flex-wrap:wrap; }
+  .step{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12.5px; font-weight:600; }
+  .step .dot{ width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono'; font-size:11px; flex:0 0 auto; background:var(--surface); }
+  .step.done .dot{ background:var(--good); border-color:var(--good); color:#fff; }
+  .step.current .dot{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .step.current{ color:var(--ink); }
+  .step-connector{ width:24px; height:1px; background:var(--line-strong); margin:0 6px; }
+  .wizard-card{ padding:26px 26px 8px; }
+  .wizard-title{ font-size:19px; font-weight:500; margin:0 0 4px; }
+  .wizard-sub{ font-size:13px; color:var(--muted); margin:0 0 22px; }
+  .onboarding-lock{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); font-family:'IBM Plex Mono'; margin-bottom:14px; }
+  .onboarding-lock .dot-lock{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+  /* ================= VARIANT C — profile dashboard, cards, anytime edit ================= */
+  .profile-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .profile-card{ grid-column: span 2; }
+  .profile-card.half{ grid-column: span 1; }
+  .card-title-row{ padding:16px 22px 4px; display:flex; justify-content:space-between; align-items:center; }
+  .card-title-row h3{ font-size:15px; font-weight:600; margin:0; font-family:'Public Sans'; }
+  .card-title-row .btn{ padding:6px 12px; font-size:12.5px; }
+  .kv-row{ display:flex; justify-content:space-between; padding:8px 22px; font-size:13px; border-bottom:1px solid var(--line); }
+  .kv-row:last-child{ border-bottom:none; }
+  .kv-row .k{ color:var(--muted); }
+  .kv-row .v{ font-family:'IBM Plex Mono'; }
+  .risk-summary{ padding:16px 22px 20px; display:flex; flex-direction:column; gap:10px; }
+  .chat-hint{ display:flex; gap:8px; align-items:flex-start; padding:10px 12px; border:1px dashed var(--line-strong); border-radius:8px; font-size:12px; color:var(--muted); }
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:60; padding:24px; }
+  .modal{ background:var(--surface); border-radius:12px; max-width:640px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px -20px rgba(0,0,0,0.5); }
+  .modal-head{ padding:18px 22px; border-bottom:1px solid var(--line-strong); display:flex; justify-content:space-between; align-items:center; }
+  .modal-head h2{ font-size:17px; margin:0; }
+  .modal-close{ background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; }
+
+  /* ---------- Switcher / toast ---------- */
+  .switcher{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground); border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:50; }
+  .switcher button{ background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{ font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:220px; text-align:center; }
+  .switcher .label b{ color:var(--accent); }
+  .toast{ position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0; background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; transition:opacity .18s, transform .18s; pointer-events:none; z-index:50; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>UX du formulaire de profil et du Questionnaire de risque — ticket wayfinder 08</span>
+    <span id="variant-hint">Variante A — Formulaire unique</span>
+  </div>
+  <div id="app"></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- shared data / helpers ---------------- */
+const OBJECTIF_TYPES = ['Retraite','Achat immobilier','Transmission','Sécurité / urgence','Projet libre'];
+
+function fieldRow(f, idPrefix){
+  const id = idPrefix + '-' + f.k;
+  let input;
+  if(f.t === 'select'){
+    input = `<select class="field-input" id="${id}">${f.opts.map(o=>`<option ${f.val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  } else if(f.t === 'textarea'){
+    input = `<textarea class="field-input" id="${id}" rows="2" placeholder="${f.ph||''}"></textarea>`;
+  } else if(f.sfx){
+    input = `<div class="field-suffix-wrap"><input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}" value="${f.val||''}" style="padding-right:34px"><span class="field-suffix">${f.sfx}</span></div>`;
+  } else {
+    input = `<input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}" value="${f.val||''}">`;
+  }
+  return `<div class="field-row"><label for="${id}">${f.l}${f.note?`<span class="field-note">${f.note}</span>`:''}</label><div>${input}</div></div>`;
+}
+
+const IDENTITE_FIELDS = () => ([
+  {k:'naissance', l:'Date de naissance', t:'date', val:'1985-04-12'},
+  {k:'tmi', l:'Tranche marginale d\'imposition (TMI)', t:'select', opts:['0 %','11 %','30 %','41 %','45 %'], val:'30 %'},
+]);
+const FAMILLE_FIELDS = () => ([
+  {k:'statut', l:'Statut marital', t:'select', opts:['Célibataire','Pacsé(e)','Marié(e)','Divorcé(e)','Veuf/veuve']},
+  {k:'personnesCharge', l:'Personnes à charge', t:'number', val:0},
+]);
+
+const OBJECTIFS_SEED = [
+  {type:'Retraite', libelle:'Compléter la retraite', horizon:'2050', montant:'—'},
+  {type:'Achat immobilier', libelle:'Résidence secondaire', horizon:'2028', montant:'150 000 €'},
+];
+
+const QUIZ_QUESTIONS = [
+  { k:'perte', label:'1. Le marché chute de 20 % en quelques semaines. Que faites-vous ?',
+    opts:[
+      {v:1, t:'Je vends tout immédiatement pour limiter les pertes.'},
+      {v:2, t:'Je vends une partie de mes positions.'},
+      {v:3, t:'Je ne fais rien, j\'attends que ça remonte.'},
+      {v:4, t:'J\'investis davantage pour profiter du point bas.'},
+    ]},
+  { k:'horizon', label:'2. Quel est votre horizon de placement principal ?',
+    opts:[
+      {v:1, t:'Moins de 2 ans'}, {v:2, t:'2 à 5 ans'}, {v:3, t:'5 à 10 ans'}, {v:4, t:'Plus de 10 ans'},
+    ]},
+  { k:'connaissance', label:'3. Comment décririez-vous votre connaissance des marchés financiers ?',
+    opts:[
+      {v:'Novice', t:'Novice — je ne suis pas les marchés.'},
+      {v:'Initié', t:'Initié — je comprends les grands principes.'},
+      {v:'Expert', t:'Expert — je gère activement mon portefeuille.'},
+    ]},
+  { k:'priorite', label:'4. Entre sécurité et performance, votre priorité est plutôt :',
+    opts:[
+      {v:1, t:'La sécurité avant tout, quitte à avoir un rendement faible.'},
+      {v:2, t:'Un peu des deux, avec une préférence pour la sécurité.'},
+      {v:3, t:'Un peu des deux, avec une préférence pour la performance.'},
+      {v:4, t:'La performance avant tout, j\'accepte une forte volatilité.'},
+    ]},
+];
+
+function computeBucket(answers){
+  if(!answers.perte || !answers.horizon || !answers.priorite) return null;
+  const score = Number(answers.perte) + Number(answers.horizon) + Number(answers.priorite);
+  if(score <= 6) return 'prudent';
+  if(score <= 9) return 'equilibre';
+  return 'dynamique';
+}
+const BUCKET_LABEL = {prudent:'Prudent', equilibre:'Équilibré', dynamique:'Dynamique'};
+
+function bucketPill(bucket, connaissance){
+  if(!bucket) return `<span class="pill" style="background:var(--surface-2);color:var(--muted)">À déterminer</span>`;
+  return `<span class="pill ${bucket}">${BUCKET_LABEL[bucket]}</span> <span class="pill" style="background:var(--surface-2);color:var(--ink)">${connaissance||'—'}</span>`;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function objectifRow(o, i, allowDelete){
+  return `<div class="objectif-item">
+    <div><div class="o-name">${o.libelle}</div><div class="o-type">${o.type}</div></div>
+    <div class="o-meta">Horizon ${o.horizon}</div>
+    <div class="o-meta">${o.montant}</div>
+    ${allowDelete ? `<button class="o-del" data-del="${i}" aria-label="Supprimer">×</button>` : '<span></span>'}
+  </div>`;
+}
+
+function objectifAddForm(prefix){
+  return `<div class="objectif-form">
+    <input class="field-input" id="${prefix}-libelle" type="text" placeholder="Libellé de l'objectif">
+    <select class="field-input" id="${prefix}-type">${OBJECTIF_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+    <input class="field-input" id="${prefix}-horizon" type="text" placeholder="Horizon (ex. 2035)">
+    <button class="btn" id="${prefix}-add">+ Ajouter</button>
+  </div>`;
+}
+
+function wireObjectifs(root, state, prefix, repaint){
+  const addBtn = root.querySelector('#'+prefix+'-add');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const libelle = root.querySelector('#'+prefix+'-libelle').value || 'Nouvel objectif';
+    const type = root.querySelector('#'+prefix+'-type').value;
+    const horizon = root.querySelector('#'+prefix+'-horizon').value || '—';
+    state.objectifs.push({type, libelle, horizon, montant:'—'});
+    repaint();
+  });
+  root.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    state.objectifs.splice(+b.dataset.del, 1); repaint();
+  }));
+}
+
+function quizBlock(state, prefix, onAnswer){
+  return QUIZ_QUESTIONS.map(q => `
+    <div class="quiz-q">
+      <p class="q-label">${q.label}</p>
+      <div class="quiz-opts">
+        ${q.opts.map((o,oi)=>`
+          <label class="quiz-opt ${state.answers[q.k]==o.v ? 'selected':''}">
+            <input type="radio" name="${prefix}-${q.k}" ${state.answers[q.k]==o.v?'checked':''} data-q="${q.k}" data-v="${o.v}">
+            <span class="o-text">${o.t}</span>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function wireQuiz(root, state, repaint){
+  root.querySelectorAll('.quiz-opt input').forEach(inp=>inp.addEventListener('change', (e)=>{
+    state.answers[e.target.dataset.q] = e.target.dataset.v;
+    repaint();
+  }));
+}
+
+/* ================================================================== */
+/* VARIANT A — one long form, sticky anchor nav, accessible anytime    */
+/* ================================================================== */
+const StateA = { section:'identite', objectifs: JSON.parse(JSON.stringify(OBJECTIFS_SEED)), answers:{} };
+
+function renderA(){
+  const bucket = computeBucket(StateA.answers);
+  return `
+    <div class="anchor-nav">
+      ${['identite','famille','objectifs','risque'].map(s=>`<button data-a-nav="${s}" class="${StateA.section===s?'active':''}">${{identite:'Identité & fiscalité',famille:'Situation familiale',objectifs:'Objectifs',risque:'Profil de risque'}[s]}</button>`).join('')}
+    </div>
+
+    <div class="a-section card" id="a-identite">
+      <div class="section-head"><h2>Identité & fiscalité</h2></div>
+      ${IDENTITE_FIELDS().map(f=>fieldRow(f,'a-id')).join('')}
+    </div>
+
+    <div class="a-section card" id="a-famille" style="margin-top:16px">
+      <div class="section-head"><h2>Situation familiale</h2></div>
+      ${FAMILLE_FIELDS().map(f=>fieldRow(f,'a-fam')).join('')}
+    </div>
+
+    <div class="a-section card" id="a-objectifs" style="margin-top:16px">
+      <div class="section-head"><h2>Objectifs</h2><span class="tag">${StateA.objectifs.length} objectif${StateA.objectifs.length>1?'s':''}</span></div>
+      ${StateA.objectifs.map((o,i)=>objectifRow(o,i,true)).join('')}
+      <div class="objectif-add">${objectifAddForm('a-obj')}</div>
+    </div>
+
+    <div class="a-section card" id="a-risque" style="margin-top:16px">
+      <div class="section-head"><h2>Questionnaire de risque</h2>${bucketPill(bucket, StateA.answers.connaissance)}</div>
+      ${quizBlock(StateA, 'a-q')}
+      <div class="quiz-result">
+        <div><div class="r-label">Profil de risque calculé</div>${bucketPill(bucket, StateA.answers.connaissance)}</div>
+        <div style="flex:1"></div>
+        <span class="field-note" style="font-style:normal">Un override manuel reste possible en chat ; il est réécrasé au prochain passage du questionnaire.</span>
+      </div>
+    </div>
+
+    <div class="btn-row" style="padding:20px 0 0">
+      <span></span>
+      <button class="btn primary" id="a-save">Enregistrer le profil</button>
+    </div>
+  `;
+}
+function wireA(root){
+  root.querySelectorAll('[data-a-nav]').forEach(b=>b.addEventListener('click', ()=>{
+    StateA.section = b.dataset.aNav;
+    document.getElementById('a-'+StateA.section).scrollIntoView({behavior:'smooth', block:'start'});
+    paint();
+  }));
+  wireObjectifs(root, StateA, 'a-obj', paint);
+  wireQuiz(root, StateA, paint);
+  const save = root.querySelector('#a-save');
+  if(save) save.addEventListener('click', ()=>toast('Profil enregistré (prototype)'));
+}
+
+/* ================================================================== */
+/* VARIANT B — mandatory step-by-step onboarding wizard                */
+/* ================================================================== */
+const StateB = { step:1, objectifs: [], answers:{} };
+const STEPS_B = [
+  {n:1, label:'Identité & fiscalité'},
+  {n:2, label:'Situation familiale'},
+  {n:3, label:'Objectifs'},
+  {n:4, label:'Questionnaire de risque'},
+  {n:5, label:'Résultat'},
+];
+
+function renderB(){
+  const bucket = computeBucket(StateB.answers);
+  let body = '';
+  if(StateB.step===1){
+    body = `<div class="wizard-title">Identité & fiscalité</div>
+      <p class="wizard-sub">Ces informations contextualisent tous les conseils du moteur.</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">${IDENTITE_FIELDS().map(f=>fieldRow(f,'b-id')).join('')}</div>`;
+  } else if(StateB.step===2){
+    body = `<div class="wizard-title">Situation familiale</div>
+      <p class="wizard-sub">Utilisée notamment pour l'abattement transmission en assurance-vie.</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">${FAMILLE_FIELDS().map(f=>fieldRow(f,'b-fam')).join('')}</div>`;
+  } else if(StateB.step===3){
+    body = `<div class="wizard-title">Vos objectifs</div>
+      <p class="wizard-sub">Ajoutez un ou plusieurs objectifs patrimoniaux — vous pourrez continuer sans en ajouter.</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">
+        ${StateB.objectifs.length ? StateB.objectifs.map((o,i)=>objectifRow(o,i,true)).join('') : '<div style="padding:16px 22px;color:var(--muted);font-size:13px">Aucun objectif ajouté pour l’instant.</div>'}
+        <div class="objectif-add">${objectifAddForm('b-obj')}</div>
+      </div>`;
+  } else if(StateB.step===4){
+    body = `<div class="wizard-title">Questionnaire de risque</div>
+      <p class="wizard-sub">4 questions déterminent votre Profil de risque (bucket + connaissance des marchés).</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">${quizBlock(StateB, 'b-q')}</div>`;
+  } else {
+    body = `<div class="wizard-title">Votre profil est prêt</div>
+      <p class="wizard-sub">Vous pourrez ajuster le bucket depuis le chat à tout moment — l'ajustement sera réécrasé au prochain passage du questionnaire.</p>
+      <div class="quiz-result" style="border-radius:8px;border:1px solid var(--line)">
+        <div><div class="r-label">Profil de risque</div>${bucketPill(bucket, StateB.answers.connaissance)}</div>
+      </div>`;
+  }
+  const isFirst = StateB.step===1, isLast = StateB.step===5;
+  const nextDisabled = StateB.step===4 && !bucket;
+  return `
+    <div class="onboarding-lock"><span class="dot-lock"></span>Configuration initiale obligatoire — s'affiche une seule fois avant le premier usage.</div>
+    <div class="card wizard-card">
+      <div class="stepper">${STEPS_B.map((s,i)=>`
+        ${i>0?'<div class="step-connector"></div>':''}
+        <div class="step ${s.n===StateB.step?'current':(s.n<StateB.step?'done':'')}"><span class="dot">${s.n<StateB.step?'✓':s.n}</span><span>${s.label}</span></div>`).join('')}
+      </div>
+      ${body}
+      <div class="btn-row" style="padding-left:0;padding-right:0">
+        <button class="btn ghost" id="b-back" ${isFirst?'style="visibility:hidden"':''}>← Retour</button>
+        <button class="btn primary" id="b-next" ${nextDisabled?'disabled':''}>${isLast?'Terminer':'Continuer →'}</button>
+      </div>
+    </div>
+  `;
+}
+function wireB(root){
+  wireObjectifs(root, StateB, 'b-obj', paint);
+  wireQuiz(root, StateB, paint);
+  const back = root.querySelector('#b-back');
+  if(back) back.addEventListener('click', ()=>{ StateB.step = Math.max(1, StateB.step-1); paint(); });
+  const next = root.querySelector('#b-next');
+  if(next) next.addEventListener('click', ()=>{
+    if(StateB.step===5){ toast('Onboarding terminé (prototype)'); StateB.step=1; StateB.objectifs=[]; StateB.answers={}; paint(); return; }
+    StateB.step += 1; paint();
+  });
+}
+
+/* ================================================================== */
+/* VARIANT C — profile dashboard, editable cards, accessible anytime   */
+/* ================================================================== */
+const StateC = { objectifs: JSON.parse(JSON.stringify(OBJECTIFS_SEED)), answers:{perte:3,horizon:4,connaissance:'Initié',priorite:2}, editing:null, quizOpen:false };
+
+function renderC(){
+  const bucket = computeBucket(StateC.answers);
+  return `
+    <div class="profile-grid">
+      <div class="card profile-card half">
+        <div class="card-title-row"><h3>Identité & fiscalité</h3><button class="btn" data-edit="identite">${StateC.editing==='identite'?'Fermer':'Modifier'}</button></div>
+        ${StateC.editing==='identite'
+          ? IDENTITE_FIELDS().map(f=>fieldRow(f,'c-id')).join('')
+          : `<div class="kv-row"><span class="k">Date de naissance</span><span class="v">12/04/1985</span></div><div class="kv-row"><span class="k">TMI</span><span class="v">30 %</span></div>`}
+      </div>
+
+      <div class="card profile-card half">
+        <div class="card-title-row"><h3>Situation familiale</h3><button class="btn" data-edit="famille">${StateC.editing==='famille'?'Fermer':'Modifier'}</button></div>
+        ${StateC.editing==='famille'
+          ? FAMILLE_FIELDS().map(f=>fieldRow(f,'c-fam')).join('')
+          : `<div class="kv-row"><span class="k">Statut marital</span><span class="v">Marié(e)</span></div><div class="kv-row"><span class="k">Personnes à charge</span><span class="v">2</span></div>`}
+      </div>
+
+      <div class="card profile-card">
+        <div class="card-title-row"><h3>Objectifs</h3><span class="tag" style="font-family:'IBM Plex Mono';font-size:11px;color:var(--muted)">${StateC.objectifs.length} objectif${StateC.objectifs.length>1?'s':''}</span></div>
+        ${StateC.objectifs.map((o,i)=>objectifRow(o,i,true)).join('')}
+        <div class="objectif-add">${objectifAddForm('c-obj')}</div>
+      </div>
+
+      <div class="card profile-card">
+        <div class="card-title-row"><h3>Profil de risque</h3></div>
+        <div class="risk-summary">
+          <div>${bucketPill(bucket, StateC.answers.connaissance)}</div>
+          <div class="chat-hint">💬 Vous pouvez ajuster ce bucket à tout moment en chat ("mets-moi plutôt en dynamique") — l'ajustement est réécrasé au prochain passage du questionnaire.</div>
+          <div><button class="btn" id="c-open-quiz">Refaire le Questionnaire de risque</button></div>
+        </div>
+      </div>
+    </div>
+
+    ${StateC.quizOpen ? `
+      <div class="modal-backdrop" id="c-modal-backdrop">
+        <div class="modal">
+          <div class="modal-head"><h2>Questionnaire de risque</h2><button class="modal-close" id="c-modal-close">×</button></div>
+          ${quizBlock(StateC, 'c-q')}
+          <div class="quiz-result"><div><div class="r-label">Résultat</div>${bucketPill(computeBucket(StateC.answers), StateC.answers.connaissance)}</div><div style="flex:1"></div><button class="btn primary" id="c-quiz-save">Valider</button></div>
+        </div>
+      </div>` : ''}
+  `;
+}
+function wireC(root){
+  root.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    StateC.editing = StateC.editing===b.dataset.edit ? null : b.dataset.edit; paint();
+  }));
+  wireObjectifs(root, StateC, 'c-obj', paint);
+  const openQuiz = root.querySelector('#c-open-quiz');
+  if(openQuiz) openQuiz.addEventListener('click', ()=>{ StateC.quizOpen = true; paint(); });
+  const closeQuiz = root.querySelector('#c-modal-close');
+  if(closeQuiz) closeQuiz.addEventListener('click', ()=>{ StateC.quizOpen = false; paint(); });
+  const backdrop = root.querySelector('#c-modal-backdrop');
+  if(backdrop) backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop){ StateC.quizOpen=false; paint(); } });
+  wireQuiz(root, StateC, paint);
+  const quizSave = root.querySelector('#c-quiz-save');
+  if(quizSave) quizSave.addEventListener('click', ()=>{ StateC.quizOpen=false; toast('Profil de risque mis à jour (prototype)'); paint(); });
+}
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:'Formulaire unique', hint:'sections ancrées, accessible à tout moment depuis "Profil"', render:renderA, wire:wireA },
+  { key:'B', name:'Assistant multi-étapes (onboarding)', hint:'obligatoire au premier lancement, un écran par bloc', render:renderB, wire:wireB },
+  { key:'C', name:'Tableau de bord en cartes', hint:'cartes éditables + Questionnaire en flux séparé (modale), accessible à tout moment', render:renderC, wire:wireC },
+];
+let current = 0;
+
+function paint(){
+  const v = VARIANTS[current];
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="eyebrow">Profil — variante ${v.key}</div>
+      <h1>${v.name}</h1>
+      <p class="sub">Saisie/mise à jour du Profil (identité, fiscalité, situation familiale, Objectifs) et Questionnaire de risque.</p>
+    </div>
+    <main>${v.render()}</main>
+  `;
+  v.wire(app);
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.hint}`;
+}
+function go(delta){ current = (current + delta + VARIANTS.length) % VARIANTS.length; paint(); }
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+
+paint();
+</script>

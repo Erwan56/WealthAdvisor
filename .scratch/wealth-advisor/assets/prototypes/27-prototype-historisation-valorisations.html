@@ -1,0 +1,545 @@
+<title>Historisation des Valorisations</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2; --surface:#FFFFFF; --surface-2:#F7F5EC; --ink:#20261F; --muted:#6E6858;
+    --line:#CFC6AC; --line-strong:#B8AD8C; --accent:#96601F; --accent-ink:#FFF8ED; --good:#3F6C4A;
+    --bad:#A24A3B; --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15; --surface:#20241D; --surface-2:#262B21; --ink:#EDE8DA; --muted:#A79E88;
+      --line:#3A3E31; --line-strong:#4B5040; --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B;
+      --bad:#E08A78; --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15; --surface:#20241D; --surface-2:#262B21; --ink:#EDE8DA; --muted:#A79E88;
+    --line:#3A3E31; --line-strong:#4B5040; --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B;
+    --bad:#E08A78; --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink); font-family:'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Fraunces', Georgia, serif; text-wrap:balance; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .proto-banner{
+    background:var(--ink); color:var(--ground); font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:7px 20px; display:flex; justify-content:space-between; gap:12px;
+  }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+
+  .app-header{ padding:28px 32px 0; max-width:1040px; margin:0 auto; width:100%; }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:26px; font-weight:500; margin:4px 0 4px; }
+  .app-header p{ font-size:13px; color:var(--muted); max-width:640px; margin:0 0 18px; }
+
+  main{ flex:1; max-width:1040px; margin:0 auto; width:100%; padding:20px 32px 140px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+
+  .field-row{ display:grid; grid-template-columns:230px 1fr; gap:16px; align-items:start; padding:12px 22px; border-bottom:1px solid var(--line); }
+  .field-row:last-child{ border-bottom:none; }
+  .field-row label{ font-size:13.5px; color:var(--muted); padding-top:8px; }
+  .field-row .field-note{ display:block; font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
+  .field-input{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  input[type=date].field-input{ font-family:'IBM Plex Mono'; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .field-suffix-wrap{ position:relative; }
+  .field-suffix{ position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); pointer-events:none; }
+  .field-row.highlight{ background:color-mix(in srgb, var(--accent) 7%, transparent); }
+  .field-row.highlight label{ color:var(--ink); font-weight:600; }
+
+  .btn{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn.small{ font-size:12px; padding:5px 10px; border-radius:6px; }
+  .btn.icon{ padding:5px 7px; line-height:1; font-size:13px; }
+  .btn.danger:hover{ border-color:var(--bad); color:var(--bad); }
+  .btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .btn-row{ display:flex; gap:10px; padding:14px 22px; }
+
+  /* ---------- Dashboard shell (shared across all 3 variants — retained from ticket 06) ---------- */
+  .dash-shell{ display:flex; gap:24px; align-items:flex-start; }
+  .dash-main{ flex:1; min-width:0; }
+  .dash-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .dash-toolbar h2{ font-size:18px; font-weight:500; margin:0; }
+  .domain-rail{ display:flex; flex-direction:column; gap:2px; width:170px; flex:0 0 auto; }
+  .rail-item{ font-family:'Public Sans'; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; text-align:left; padding:9px 14px; cursor:pointer; border-left:2px solid transparent; border-radius:0 6px 6px 0; }
+  .rail-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .rail-item.active{ color:var(--accent); border-left-color:var(--accent); background:var(--surface-2); }
+
+  .ledger-row{ border-bottom:1px solid var(--line); }
+  .ledger-row:last-child{ border-bottom:none; }
+  .ledger-row-head{ display:grid; grid-template-columns:1fr auto auto auto 18px; gap:12px; align-items:center; padding:12px 20px; cursor:pointer; }
+  .ledger-row-head:hover{ background:var(--surface-2); }
+  .ledger-row-head .name{ font-weight:600; font-size:14px; }
+  .ledger-row-head .sub{ font-size:11px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .ledger-row-head .val{ font-family:'IBM Plex Mono'; font-size:14px; text-align:right; }
+  .ledger-row-head .asof{ font-size:10.5px; color:var(--muted); font-family:'IBM Plex Mono'; text-align:right; }
+  .ledger-row-head .chev{ transition:transform .15s; color:var(--muted); }
+  .ledger-row.open .chev{ transform:rotate(90deg); }
+  .ledger-row-body{ display:none; padding:2px 0 16px; }
+  .ledger-row.open .ledger-row-body{ display:block; }
+  .disclosure{ margin:12px 22px 0; }
+  .disclosure summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--accent); list-style:none; display:flex; align-items:center; gap:6px; }
+  .disclosure summary::-webkit-details-marker{ display:none; }
+  .disclosure summary:before{ content:'+'; font-family:'IBM Plex Mono'; }
+  .disclosure[open] summary:before{ content:'\2013'; }
+  .disclosure-body{ border:1px dashed var(--line-strong); border-radius:8px; margin-top:10px; overflow:hidden; }
+  .env-group-label{ padding:14px 20px 4px; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+  .hist-icon-btn{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:3px 5px; border-radius:5px; }
+  .hist-icon-btn:hover{ background:var(--surface-2); color:var(--accent); }
+  .hist-icon-btn.has-history{ color:var(--accent); }
+
+  /* ---------- History list (variant A) ---------- */
+  .hist-list{ display:flex; flex-direction:column; }
+  .hist-item{ display:grid; grid-template-columns:110px 1fr auto; gap:12px; align-items:center; padding:9px 16px; border-bottom:1px solid var(--line); font-size:13px; }
+  .hist-item:last-child{ border-bottom:none; }
+  .hist-item .d{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--muted); }
+  .hist-item .v{ font-family:'IBM Plex Mono'; }
+  .hist-item .actions{ display:flex; gap:4px; opacity:0; transition:opacity .12s; }
+  .hist-item:hover .actions{ opacity:1; }
+  .hist-item.editing .actions{ opacity:1; }
+  .hist-empty{ padding:16px; font-size:12.5px; color:var(--muted); font-style:italic; }
+  .hist-edit-row{ display:grid; grid-template-columns:130px 130px auto; gap:8px; align-items:center; padding:8px 16px; }
+  .hist-edit-row input{ font-family:'IBM Plex Mono'; font-size:12.5px; padding:5px 8px; border:1px solid var(--line-strong); border-radius:5px; background:var(--surface); color:var(--ink); }
+
+  /* ---------- Side panel / drawer (variant B) ---------- */
+  .scrim{ position:fixed; inset:0; background:rgba(20,22,17,0.35); opacity:0; pointer-events:none; transition:opacity .18s; z-index:60; }
+  .scrim.show{ opacity:1; pointer-events:auto; }
+  .drawer{ position:fixed; top:0; right:0; height:100%; width:420px; max-width:92vw; background:var(--surface); box-shadow:-16px 0 40px -18px rgba(0,0,0,0.35); transform:translateX(100%); transition:transform .2s; z-index:61; display:flex; flex-direction:column; }
+  .drawer.show{ transform:translateX(0); }
+  .drawer-head{ padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .drawer-head h3{ font-size:16px; font-weight:500; margin:0 0 2px; }
+  .drawer-head .sub{ font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .drawer-body{ flex:1; overflow-y:auto; padding:14px 20px 20px; }
+  .drawer table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .drawer th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--line-strong); }
+  .drawer td{ padding:8px; border-bottom:1px solid var(--line); font-family:'IBM Plex Mono'; font-size:12.5px; }
+  .drawer tr:last-child td{ border-bottom:none; }
+  .drawer .row-actions{ display:flex; gap:4px; justify-content:flex-end; }
+  .retro-form{ background:var(--surface-2); border:1px dashed var(--line-strong); border-radius:8px; padding:12px 14px; margin-bottom:14px; display:none; }
+  .retro-form.show{ display:block; }
+  .retro-form .grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .retro-form label{ font-size:11px; color:var(--muted); display:block; margin-bottom:3px; }
+  .retro-form input{ width:100%; font-family:'IBM Plex Mono'; font-size:13px; padding:6px 8px; border:1px solid var(--line-strong); border-radius:5px; background:var(--surface); }
+
+  /* ---------- Unified timeline (variant C) ---------- */
+  .journal{ padding:4px 0 4px; }
+  .journal-new{ margin:0 22px 14px; border:1.5px dashed var(--accent); border-radius:10px; padding:14px 16px; background:color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+  .journal-new .jn-title{ font-size:12.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .journal-new .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .journal-new label{ font-size:11px; color:var(--muted); display:block; margin-bottom:3px; }
+  .journal-new input{ width:100%; font-family:'IBM Plex Mono'; font-size:13.5px; padding:7px 9px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); }
+  .timeline{ margin:0 22px; position:relative; }
+  .timeline:before{ content:''; position:absolute; left:5px; top:6px; bottom:6px; width:1px; background:var(--line-strong); }
+  .t-item{ position:relative; padding:9px 0 9px 22px; display:grid; grid-template-columns:100px 1fr auto auto; gap:12px; align-items:center; }
+  .t-item:before{ content:''; position:absolute; left:0; top:15px; width:11px; height:11px; border-radius:50%; background:var(--surface); border:2px solid var(--accent); }
+  .t-item.first:before{ background:var(--accent); }
+  .t-item .d{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--muted); }
+  .t-item .v{ font-family:'IBM Plex Mono'; font-size:13.5px; font-weight:600; }
+  .t-item .delta{ font-family:'IBM Plex Mono'; font-size:11.5px; padding:2px 7px; border-radius:999px; }
+  .t-item .delta.up{ color:var(--good); background:color-mix(in srgb, var(--good) 14%, transparent); }
+  .t-item .delta.down{ color:var(--bad); background:color-mix(in srgb, var(--bad) 14%, transparent); }
+  .t-item .actions{ display:flex; gap:4px; opacity:0; transition:opacity .12s; }
+  .t-item:hover .actions{ opacity:1; }
+  .t-empty{ margin:0 22px 14px; font-size:12.5px; color:var(--muted); font-style:italic; }
+
+  .switcher{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground); border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:70; }
+  .switcher button{ background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{ font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:260px; text-align:center; }
+  .switcher .label b{ color:var(--accent); }
+
+  .toast{ position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0; background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; transition:opacity .18s, transform .18s; pointer-events:none; z-index:80; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.warn{ background:var(--bad); }
+
+  [hidden]{ display:none !important; }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>Historisation des Valorisations — ticket wayfinder 27 (amende le dashboard du ticket 06)</span>
+    <span id="variant-hint"></span>
+  </div>
+  <div id="app"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div><h3 id="drawer-title">Historique</h3><div class="sub" id="drawer-sub"></div></div>
+    <button class="btn ghost small" id="drawer-close">Fermer ✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================== */
+/* Domain content — carried over from the ticket 06 dashboard prototype */
+/* ================================================================== */
+const DOMAINS = {
+  liquidites: { label:'Liquidités', hasEnveloppe:false, ligneLabel:'Compte',
+    seed:[{key:'livretA',name:'Livret A — Boursorama',sub:'Livret A',val:12400},{key:'ldds',name:'LDDS — BNP',sub:'LDDS',val:6000}] },
+  bourse: { label:'Bourse (PEA / CTO)', hasEnveloppe:true, enveloppeLabel:'Enveloppe', ligneLabel:'Titre',
+    enveloppes:[
+      {name:'PEA — Boursorama', meta:'PEA · ouvert 03/2019 · actif',
+       lignes:[{key:'msci',name:'MSCI World',sub:'IE00B4X9L533',val:38200},{key:'sp500',name:'S&P 500',sub:'IE00B5BMR087',val:14900}]},
+      {name:'CTO — Degiro', meta:'CTO · ouvert 01/2021 · actif',
+       lignes:[{key:'lvmh',name:'LVMH',sub:'FR0000121014',val:5100}]},
+    ]},
+  immobilier: { label:'Immobilier', hasEnveloppe:false, ligneLabel:'Bien',
+    seed:[{key:'lyon',name:'Appartement Lyon 7e',sub:'Résidence principale',val:310000},{key:'rennes',name:'Studio Rennes (locatif)',sub:'Meublé (LMNP)',val:98000}] },
+  av_per: { label:'Assurance-vie / PER', hasEnveloppe:true, enveloppeLabel:'Contrat', ligneLabel:'Support',
+    enveloppes:[
+      {name:'Linxea Spirit 2', meta:'Assurance-vie · ouvert 06/2016 · actif',
+       lignes:[{key:'fondseuro',name:'Fonds euro — Suravenir',sub:'Fonds euro',val:41000},{key:'ucmonde',name:'UC Monde',sub:'Unité de compte',val:12300}]},
+    ]},
+  crypto: { label:'Crypto', hasEnveloppe:true, enveloppeLabel:'Portefeuille', ligneLabel:'Actif',
+    enveloppes:[
+      {name:'Binance', meta:'Plateforme étrangère · acquis 15 200 €',
+       lignes:[{key:'btc',name:'BTC',sub:'0,21',val:11800},{key:'eth',name:'ETH',sub:'1,4',val:3900}]},
+    ]},
+  pe_scpi: { label:'Private equity / SCPI', hasEnveloppe:true, enveloppeLabel:'Fonds', ligneLabel:'Part souscrite',
+    enveloppes:[
+      {name:'SCPI Corum Origin', meta:'SCPI · blocage 8 ans',
+       lignes:[{key:'corum',name:'42 parts',sub:'souscrites 2022',val:18900}]},
+    ]},
+};
+const DOMAIN_KEYS = Object.keys(DOMAINS);
+const TODAY = '2026-09-04';
+
+/* Seeded Valorisation history for a handful of representative Lignes.
+   The rest have no prior history — a realistic "première Valorisation" case. */
+const HISTORY = {
+  msci:     [ {date:'2024-02-18', value:29800}, {date:'2024-08-25', value:32100}, {date:'2025-03-02', value:35400}, {date:'2025-09-05', value:38200} ],
+  rennes:   [ {date:'2023-06-10', value:89000, crd:112000}, {date:'2024-01-15', value:92500, crd:104000}, {date:'2024-09-20', value:95000, crd:97000}, {date:'2025-09-05', value:98000, crd:90000} ],
+  fondseuro:[ {date:'2024-06-01', value:36500}, {date:'2025-01-10', value:38700}, {date:'2025-09-05', value:41000} ],
+  livretA:  [ {date:'2025-03-01', value:9800}, {date:'2025-09-05', value:12400} ],
+};
+
+function euros(v){ return v.toLocaleString('fr-FR') + ' €'; }
+function fmtDate(iso){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function daysAgo(iso){ return Math.round((new Date(TODAY)-new Date(iso))/86400000); }
+function lastEntry(key){ const h=HISTORY[key]; return h && h.length ? h[h.length-1] : null; }
+
+function toast(msg, warn){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.toggle('warn', !!warn);
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 1700);
+}
+
+/* ================================================================== */
+/* Shared dashboard shell — rail + ledger list (variant C from ticket 06) */
+/* Only the expanded row body differs per variant below.                */
+/* ================================================================== */
+const Shell = { domain:'bourse', open:null };
+
+function allItems(domain){
+  const d = DOMAINS[domain];
+  const out = [];
+  if(d.hasEnveloppe){
+    d.enveloppes.forEach((env,ei)=>env.lignes.forEach((l,li)=>out.push({item:l, path:`${ei}.${li}`, group:`${env.name} — ${env.meta}`})));
+  } else {
+    d.seed.forEach((l,li)=>out.push({item:l, path:`${li}`, group:null}));
+  }
+  return out;
+}
+
+function renderShell(rowBodyFn){
+  const d = DOMAINS[Shell.domain];
+  const items = allItems(Shell.domain);
+  let list = '';
+  let lastGroup;
+  items.forEach(({item,path,group})=>{
+    if(group !== lastGroup){ list += `<div class="env-group-label">${group}</div>`; lastGroup = group; }
+    list += ledgerRow(item, path, rowBodyFn);
+  });
+  return `
+    <div class="dash-shell">
+      <nav class="domain-rail">
+        ${DOMAIN_KEYS.map(k=>`<button class="rail-item ${k===Shell.domain?'active':''}" data-domain="${k}">${DOMAINS[k].label}</button>`).join('')}
+      </nav>
+      <div class="dash-main">
+        <div class="dash-toolbar"><h2>${d.label}</h2><button class="btn primary" id="add-btn">+ Ajouter ${(d.ligneLabel||'').toLowerCase()}</button></div>
+        <div class="card">${list}</div>
+      </div>
+    </div>`;
+}
+
+function ledgerRow(item, path, rowBodyFn){
+  const isOpen = Shell.open===path;
+  const h = HISTORY[item.key] || [];
+  const last = lastEntry(item.key);
+  return `<div class="ledger-row ${isOpen?'open':''}">
+    <div class="ledger-row-head" data-path="${path}">
+      <div><div class="name">${item.name}</div><div class="sub">${item.sub}</div></div>
+      <div class="val">${euros(item.val)}</div>
+      <div class="asof">${last?`au ${fmtDate(last.date)}`:'aucune donnée'}</div>
+      ${rowHeadExtra(item, path, h)}
+      <div class="chev">›</div>
+    </div>
+    <div class="ledger-row-body">${isOpen ? rowBodyFn(item, path, h) : ''}</div>
+  </div>`;
+}
+function rowHeadExtra(){ return '<div></div>'; }
+
+function wireShell(root, wireBodyFn){
+  root.querySelectorAll('.rail-item').forEach(b=>b.addEventListener('click', ()=>{ Shell.domain=b.dataset.domain; Shell.open=null; paint(); }));
+  root.querySelectorAll('.ledger-row-head').forEach(el=>el.addEventListener('click', (e)=>{
+    if(e.target.closest('[data-no-toggle]')) return;
+    const p = el.dataset.path; Shell.open = (Shell.open===p) ? null : p; paint();
+  }));
+  const add = root.querySelector('#add-btn');
+  if(add) add.addEventListener('click', ()=>toast('Nouvelle ligne ajoutée (prototype)'));
+  wireBodyFn(root);
+}
+
+function valorisationFields(prefix, item){
+  return `
+    <div class="field-row highlight">
+      <label for="${prefix}-date">Date de la valorisation</label>
+      <input class="field-input" id="${prefix}-date" type="date" value="${TODAY}">
+    </div>
+    <div class="field-row">
+      <label for="${prefix}-val">Valeur actuelle</label>
+      <div class="field-suffix-wrap"><input class="field-input" id="${prefix}-val" type="number" value="${item.val}" style="padding-right:34px"><span class="field-suffix">€</span></div>
+    </div>`;
+}
+function mouvementDisclosure(prefix){
+  return `<details class="disclosure">
+    <summary>Associer un mouvement (versement, achat…)</summary>
+    <div class="disclosure-body">
+      <div class="field-row"><label>Type</label><select class="field-input"><option>Versement</option><option>Retrait</option></select></div>
+      <div class="field-row"><label>Montant</label><div class="field-suffix-wrap"><input class="field-input" type="number" style="padding-right:34px"><span class="field-suffix">€</span></div></div>
+    </div>
+  </details>`;
+}
+
+/* ================================================================== */
+/* VARIANT A — history as a disclosure bolted onto the existing form   */
+/* ================================================================== */
+function bodyA(item, path, h){
+  return `
+    ${valorisationFields('a-'+path, item)}
+    ${mouvementDisclosure('a-'+path)}
+    <details class="disclosure" ${h.length?'':'open'}>
+      <summary>Historique${h.length?` (${h.length})`:''}</summary>
+      <div class="disclosure-body">
+        ${h.length ? `<div class="hist-list">${h.slice().reverse().map((e,i)=>histItemA(e,path,i)).join('')}</div>` : `<div class="hist-empty">Aucune Valorisation antérieure — ce sera la première.</div>`}
+      </div>
+    </details>
+    <div class="btn-row"><button class="btn primary" data-save="${path}">Enregistrer la mise à jour</button></div>
+  `;
+}
+function histItemA(e, path, i){
+  return `<div class="hist-item" data-hist="${path}.${i}">
+    <div class="d">${fmtDate(e.date)}</div>
+    <div class="v">${euros(e.value)}${e.crd!==undefined?` <span style="color:var(--muted);font-size:11px">· CRD ${euros(e.crd)}</span>`:''}</div>
+    <div class="actions">
+      <button class="btn icon ghost" data-hist-edit="${path}.${i}" data-no-toggle title="Corriger">✎</button>
+      <button class="btn icon ghost danger" data-hist-del="${path}.${i}" data-no-toggle title="Supprimer">🗑</button>
+    </div>
+  </div>`;
+}
+function wireA(root){
+  root.querySelectorAll('[data-save]').forEach(b=>b.addEventListener('click',(e)=>{ e.stopPropagation(); toast('Valorisation enregistrée (prototype)'); }));
+  root.querySelectorAll('[data-hist-edit]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const row = b.closest('.hist-item'); row.classList.add('editing');
+    const d = row.querySelector('.d').textContent, v = row.querySelector('.v').textContent.replace(/[^\d]/g,'');
+    row.innerHTML = `<div class="hist-edit-row" style="grid-column:1/-1">
+        <input type="date" value="${TODAY}">
+        <input type="number" value="${v}">
+        <div style="display:flex;gap:6px">
+          <button class="btn small primary" data-no-toggle data-confirm-edit>OK</button>
+          <button class="btn small ghost" data-no-toggle data-cancel-edit>Annuler</button>
+        </div>
+      </div>`;
+    row.querySelector('[data-confirm-edit]').addEventListener('click',(ev)=>{ ev.stopPropagation(); toast('Entrée corrigée (prototype)'); paint(); });
+    row.querySelector('[data-cancel-edit]').addEventListener('click',(ev)=>{ ev.stopPropagation(); paint(); });
+  }));
+  root.querySelectorAll('[data-hist-del]').forEach(b=>b.addEventListener('click',(e)=>{ e.stopPropagation(); toast('Entrée supprimée (prototype)', true); }));
+}
+
+/* ================================================================== */
+/* VARIANT B — history moved to a side drawer, decoupled from the      */
+/* quick inline update                                                  */
+/* ================================================================== */
+function rowHeadExtraB(item){
+  const h = HISTORY[item.key] || [];
+  return `<button class="hist-icon-btn ${h.length?'has-history':''}" data-open-drawer="${item.key}" data-no-toggle title="Historique">🕐${h.length?` ${h.length}`:''}</button>`;
+}
+function bodyB(item, path, h){
+  return `
+    ${valorisationFields('b-'+path, item)}
+    ${mouvementDisclosure('b-'+path)}
+    <div class="btn-row">
+      <button class="btn primary" data-save="${path}">Enregistrer la mise à jour</button>
+      <button class="btn ghost" data-open-drawer="${item.key}" data-no-toggle>Voir l'historique complet →</button>
+    </div>
+  `;
+}
+function openDrawer(item){
+  const h = HISTORY[item.key] || [];
+  document.getElementById('drawer-title').textContent = item.name;
+  document.getElementById('drawer-sub').textContent = h.length ? `${h.length} Valorisation${h.length>1?'s':''} enregistrée${h.length>1?'s':''}` : 'Aucune Valorisation enregistrée';
+  const hasCrd = h.some(e=>e.crd!==undefined);
+  const body = document.getElementById('drawer-body');
+  body.innerHTML = `
+    <button class="btn small" id="retro-toggle" style="margin-bottom:12px">+ Ajouter une valorisation rétroactive</button>
+    <div class="retro-form" id="retro-form">
+      <div class="grid">
+        <div><label>Date</label><input type="date" id="retro-date" value="${TODAY}"></div>
+        <div><label>Valeur</label><input type="number" id="retro-val" placeholder="€"></div>
+      </div>
+      <button class="btn small primary" id="retro-save">Ajouter</button>
+    </div>
+    ${h.length ? `<table><thead><tr><th>Date</th><th>Valeur</th>${hasCrd?'<th>CRD</th>':''}<th></th></tr></thead>
+      <tbody>${h.slice().reverse().map((e,i)=>`<tr>
+        <td>${fmtDate(e.date)}</td><td>${euros(e.value)}</td>${hasCrd?`<td>${e.crd!==undefined?euros(e.crd):'—'}</td>`:''}
+        <td><div class="row-actions">
+          <button class="btn icon ghost" data-drawer-edit="${i}" title="Corriger">✎</button>
+          <button class="btn icon ghost danger" data-drawer-del="${i}" title="Supprimer">🗑</button>
+        </div></td>
+      </tr>`).join('')}</tbody></table>` : `<div class="hist-empty">Aucune Valorisation antérieure — ce sera la première.</div>`}
+  `;
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('retro-toggle').addEventListener('click', ()=>document.getElementById('retro-form').classList.toggle('show'));
+  document.getElementById('retro-save').addEventListener('click', ()=>{ toast('Valorisation rétroactive ajoutée (prototype)'); closeDrawer(); });
+  body.querySelectorAll('[data-drawer-edit]').forEach(b=>b.addEventListener('click', ()=>toast('Entrée corrigée (prototype)')));
+  body.querySelectorAll('[data-drawer-del]').forEach(b=>b.addEventListener('click', ()=>toast('Entrée supprimée (prototype)', true)));
+}
+function closeDrawer(){
+  document.getElementById('scrim').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+}
+function wireB(root){
+  root.querySelectorAll('[data-save]').forEach(b=>b.addEventListener('click',(e)=>{ e.stopPropagation(); toast('Valorisation enregistrée (prototype)'); }));
+  root.querySelectorAll('[data-open-drawer]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const key = b.dataset.openDrawer;
+    const it = items_by_key[key];
+    openDrawer(it);
+  }));
+}
+
+/* ================================================================== */
+/* VARIANT C — unified chronological journal (no separate history UI;  */
+/* the expanded row IS the history, newest entry pinned on top)        */
+/* ================================================================== */
+function bodyC(item, path, h){
+  const rev = h.slice().reverse();
+  return `
+    <div class="journal">
+      <div class="journal-new">
+        <div class="jn-title">Nouvelle entrée</div>
+        <div class="grid">
+          <div><label>Date</label><input type="date" value="${TODAY}"></div>
+          <div><label>Valeur</label><input type="number" value="${item.val}"></div>
+        </div>
+        ${mouvementDisclosure('c-'+path)}
+        <div class="btn-row" style="padding:12px 0 0"><button class="btn primary" data-save="${path}">Ajouter au journal</button></div>
+      </div>
+      ${rev.length ? `<div class="timeline">${rev.map((e,i)=>tItem(e, rev, i)).join('')}</div>` : `<div class="t-empty">Aucune Valorisation antérieure — ce sera la première entrée du journal.</div>`}
+    </div>
+  `;
+}
+function tItem(e, rev, i){
+  const prev = rev[i+1]; // chronologically earlier entry (list is reverse-sorted)
+  let delta = '';
+  if(prev){
+    const d = e.value - prev.value;
+    const pct = ((d/prev.value)*100).toFixed(1);
+    delta = `<span class="delta ${d>=0?'up':'down'}">${d>=0?'+':''}${euros(d)} (${d>=0?'+':''}${pct}%)</span>`;
+  } else {
+    delta = `<span class="delta up" style="opacity:.6">première entrée</span>`;
+  }
+  return `<div class="t-item ${i===0?'first':''}">
+    <div class="d">${fmtDate(e.date)}${i===0?` <span style="color:var(--muted)">· ${daysAgo(e.date)} j</span>`:''}</div>
+    <div class="v">${euros(e.value)}${e.crd!==undefined?` <span style="color:var(--muted);font-weight:400;font-size:11.5px">· CRD ${euros(e.crd)}</span>`:''}</div>
+    ${delta}
+    <div class="actions">
+      <button class="btn icon ghost" data-no-toggle title="Corriger">✎</button>
+      <button class="btn icon ghost danger" data-no-toggle title="Supprimer">🗑</button>
+    </div>
+  </div>`;
+}
+function wireC(root){
+  root.querySelectorAll('[data-save]').forEach(b=>b.addEventListener('click',(e)=>{ e.stopPropagation(); toast('Nouvelle entrée ajoutée au journal (prototype)'); }));
+  root.querySelectorAll('.t-item [data-no-toggle]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    toast(b.title==='Supprimer' ? 'Entrée supprimée (prototype)' : 'Entrée corrigée (prototype)', b.title==='Supprimer');
+  }));
+}
+
+/* ---------------- lookup table of items by key, for variant B's drawer ---------------- */
+let items_by_key = {};
+function rebuildItemIndex(){
+  items_by_key = {};
+  DOMAIN_KEYS.forEach(k=>allItems(k).forEach(({item})=>{ items_by_key[item.key]=item; }));
+}
+rebuildItemIndex();
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:'Historique en disclosure', hint:"ajoute un panneau « Historique » repliable sous le formulaire existant, édition/suppression en ligne", body:bodyA, wireBody:wireA, extra:()=>{} },
+  { key:'B', name:'Historique en panneau latéral', hint:"met-à-jour rapide dans la ligne + tiroir latéral dédié pour la gestion complète et les saisies rétroactives", body:bodyB, wireBody:wireB, extra:(root)=>{ root.querySelectorAll('.ledger-row-head').forEach(el=>{ const path=el.dataset.path; }); } },
+  { key:'C', name:'Journal chronologique unifié', hint:"pas de formulaire séparé : la ligne dépliée est directement le journal, nouvelle entrée épinglée en haut", body:bodyC, wireBody:wireC, extra:()=>{} },
+];
+let current = 0;
+
+function rowHeadExtraFor(variantKey){ return variantKey==='B' ? rowHeadExtraB : rowHeadExtra; }
+
+function paint(){
+  const v = VARIANTS[current];
+  rowHeadExtra = rowHeadExtraFor(v.key);
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="eyebrow">Historisation des Valorisations — variante ${v.key}</div>
+      <h1>${v.name}</h1>
+      <p>Amende le tableau de bord retenu (ticket 06) : date de Valorisation explicite/éditable + accès à l'historique passé d'une Ligne, correction/suppression d'une entrée. Hors périmètre : reprise en masse de l'historique Excel existant.</p>
+    </div>
+    <main>${renderShell(v.body)}</main>
+  `;
+  wireShell(app, v.wireBody);
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.hint}`;
+}
+
+function go(delta){ current = (current + delta + VARIANTS.length) % VARIANTS.length; closeDrawer(); paint(); }
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+  if(e.key==='Escape') closeDrawer();
+});
+
+paint();
+</script>

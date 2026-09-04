@@ -1,0 +1,692 @@
+<meta charset="utf-8">
+<title>Écran Objectifs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2; --surface:#FFFFFF; --surface-2:#F7F5EC;
+    --ink:#20261F; --muted:#6E6858; --line:#CFC6AC; --line-strong:#B8AD8C;
+    --accent:#96601F; --accent-ink:#FFF8ED; --good:#3F6C4A; --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+      --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+      --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+    --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+    --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink); font-family:'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Fraunces', Georgia, serif; text-wrap:balance; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .proto-banner{ background:var(--ink); color:var(--ground); font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; padding:7px 20px; display:flex; justify-content:space-between; gap:12px; }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+
+  .app-header{ padding:28px 32px 20px; max-width:960px; margin:0 auto; width:100%; display:flex; justify-content:space-between; align-items:flex-end; gap:16px; }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:27px; font-weight:500; margin:4px 0 4px; }
+  .app-header .sub{ font-size:13.5px; color:var(--muted); max-width:60ch; }
+  .top-nav{ display:flex; gap:4px; max-width:960px; margin:0 auto; width:100%; padding:0 32px; }
+  .top-nav span{ font-size:12px; font-family:'IBM Plex Mono'; padding:6px 12px; border-radius:6px; color:var(--muted); }
+  .top-nav span.active{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+
+  main{ flex:1; max-width:960px; margin:0 auto; width:100%; padding:20px 32px 140px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+
+  .field-row{ display:grid; grid-template-columns:230px 1fr; gap:16px; align-items:start; padding:13px 22px; border-bottom:1px solid var(--line); }
+  .field-row:last-child{ border-bottom:none; }
+  .field-row label{ font-size:13.5px; color:var(--muted); padding-top:8px; }
+  .field-row .field-note{ display:block; font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
+  .field-input{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  select.field-input, input[type=text].field-input, textarea.field-input{ font-family:'Public Sans'; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .field-suffix-wrap{ position:relative; }
+  .field-suffix{ position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); pointer-events:none; }
+  select.field-input{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236E6858'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:26px; }
+
+  .section-head{ padding:16px 22px 12px; display:flex; align-items:baseline; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line-strong); }
+  .section-head h2{ font-size:17px; font-weight:500; margin:0; }
+  .section-head .tag{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-family:'IBM Plex Mono'; }
+
+  .btn{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn.small{ padding:5px 11px; font-size:12px; }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  .btn-row{ display:flex; gap:10px; padding:16px 22px; justify-content:space-between; }
+  .link-btn{ background:none; border:none; padding:0; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; font-family:'IBM Plex Mono'; }
+  .pill.muted{ background:var(--surface-2); color:var(--muted); }
+  .type-badge{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--accent); flex:0 0 auto; }
+
+  [hidden]{ display:none !important; }
+
+  /* ================= VARIANT A — compact list + slide-over drawer ================= */
+  .obj-table{ width:100%; }
+  .obj-row{ display:grid; grid-template-columns:34px 1fr 110px 130px 72px; gap:14px; align-items:center; padding:11px 22px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .obj-row:hover{ background:var(--surface-2); }
+  .obj-row:last-child{ border-bottom:none; }
+  .obj-row .o-name{ font-weight:600; font-size:13.5px; }
+  .obj-row .o-type{ font-size:11px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .obj-row .o-horizon{ font-size:12.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .obj-row .o-montant{ font-size:12.5px; font-family:'IBM Plex Mono'; text-align:right; }
+  .obj-row .o-montant.empty{ color:var(--muted); font-style:italic; font-family:'Public Sans'; }
+  .obj-row .o-actions{ display:flex; gap:4px; justify-content:flex-end; }
+  .obj-row .o-actions button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:15px; padding:4px; border-radius:5px; }
+  .obj-row .o-actions button:hover{ color:#B0442E; background:var(--surface); }
+  .list-head{ display:grid; grid-template-columns:34px 1fr 110px 130px 72px; gap:14px; padding:0 22px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .list-head .r{ text-align:right; }
+
+  .drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:60; opacity:0; pointer-events:none; transition:opacity .18s; }
+  .drawer-backdrop.open{ opacity:1; pointer-events:auto; }
+  .drawer{ position:fixed; top:0; right:0; bottom:0; width:min(420px, 92vw); background:var(--surface); box-shadow:-16px 0 40px -20px rgba(0,0,0,0.35); z-index:61; transform:translateX(100%); transition:transform .2s ease; display:flex; flex-direction:column; }
+  .drawer.open{ transform:translateX(0); }
+  .drawer-head{ padding:18px 22px; border-bottom:1px solid var(--line-strong); display:flex; justify-content:space-between; align-items:center; }
+  .drawer-head h2{ font-size:16px; margin:0; }
+  .drawer-close{ background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; }
+  .drawer-body{ flex:1; overflow-y:auto; }
+
+  /* ================= VARIANT B — card grid + inline mini-wizard ================= */
+  .obj-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px; }
+  .obj-card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .obj-card .oc-top{ display:flex; align-items:center; gap:10px; }
+  .obj-card .oc-name{ font-weight:600; font-size:14px; flex:1; }
+  .obj-card .oc-meta-row{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .obj-card .oc-montant{ font-size:17px; font-weight:600; font-family:'IBM Plex Mono'; }
+  .obj-card .oc-montant.empty{ font-size:13px; font-weight:500; color:var(--muted); font-style:italic; font-family:'Public Sans'; }
+  .obj-card .oc-actions{ display:flex; gap:8px; margin-top:auto; padding-top:4px; }
+  .add-card{ border:1.5px dashed var(--line-strong); border-radius:10px; display:flex; align-items:center; justify-content:center; min-height:150px; cursor:pointer; color:var(--muted); font-weight:600; font-size:13.5px; }
+  .add-card:hover{ border-color:var(--accent); color:var(--accent); }
+  .wizard-card-b{ grid-column:1 / -1; padding:20px; }
+  .wizard-steps-mini{ display:flex; gap:6px; margin-bottom:16px; }
+  .wizard-steps-mini span{ height:3px; flex:1; border-radius:2px; background:var(--line); }
+  .wizard-steps-mini span.on{ background:var(--accent); }
+  .type-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px; }
+  .type-opt{ border:1px solid var(--line); border-radius:8px; padding:10px 12px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:8px; }
+  .type-opt:hover{ border-color:var(--accent); }
+  .type-opt.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .calc-box{ background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:14px; margin-top:4px; }
+  .calc-box .calc-title{ font-size:12.5px; font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:6px; }
+  .calc-row{ display:grid; grid-template-columns:1fr 120px; gap:10px; align-items:center; margin-bottom:8px; }
+  .calc-row label{ font-size:12.5px; color:var(--muted); }
+  .calc-result{ display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px dashed var(--line-strong); margin-top:4px; font-size:13px; }
+  .calc-result b{ font-family:'IBM Plex Mono'; font-size:16px; color:var(--accent); }
+  .method-tabs{ display:flex; gap:6px; margin-bottom:12px; }
+  .method-tab{ font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:6px; border:1px solid var(--line); background:var(--surface); cursor:pointer; color:var(--muted); }
+  .method-tab.active{ border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+
+  .progress-track{ height:7px; border-radius:4px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
+  .progress-fill{ height:100%; background:var(--accent); }
+  .progress-fill.done{ background:var(--good); }
+  .progress-label{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-family:'IBM Plex Mono'; margin-top:4px; }
+  .linked-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .linked-chip{ font-size:10.5px; padding:2px 7px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); font-family:'IBM Plex Mono'; }
+  .chip-toggle{ cursor:pointer; font-size:11.5px; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface); }
+  .chip-toggle.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, var(--surface)); color:var(--accent); font-weight:600; }
+  .template-item{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .template-item:last-child{ border-bottom:none; }
+  .mini-field{ display:flex; flex-direction:column; gap:4px; }
+  .mini-field label{ font-size:11.5px; color:var(--muted); }
+
+  /* ================= VARIANT C — chronological timeline by horizon ================= */
+  .timeline-group{ margin-bottom:24px; }
+  .timeline-group .tg-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-family:'IBM Plex Mono'; font-weight:600; margin-bottom:10px; padding-left:26px; }
+  .timeline{ position:relative; padding-left:26px; }
+  .timeline::before{ content:''; position:absolute; left:9px; top:4px; bottom:4px; width:2px; background:var(--line-strong); }
+  .tl-node{ position:relative; margin-bottom:14px; cursor:pointer; }
+  .tl-node::before{ content:''; position:absolute; left:-26px; top:6px; width:11px; height:11px; border-radius:50%; background:var(--surface); border:2px solid var(--accent); }
+  .tl-node .tl-card{ background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:11px 14px; display:flex; align-items:center; gap:12px; }
+  .tl-node:hover .tl-card{ border-color:var(--accent); }
+  .tl-node .tl-name{ font-weight:600; font-size:13.5px; flex:1; }
+  .tl-node .tl-year{ font-size:12px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .tl-node .tl-montant{ font-size:12.5px; font-family:'IBM Plex Mono'; }
+  .tl-node .tl-montant.empty{ color:var(--muted); font-style:italic; font-family:'Public Sans'; font-size:11.5px; }
+  .add-timeline-btn{ margin-left:0; }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:60; padding:24px; }
+  .modal{ background:var(--surface); border-radius:12px; max-width:520px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px -20px rgba(0,0,0,0.5); }
+  .modal-head{ padding:18px 22px; border-bottom:1px solid var(--line-strong); display:flex; justify-content:space-between; align-items:center; }
+  .modal-head h2{ font-size:17px; margin:0; }
+  .modal-close{ background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; }
+  .defer-note{ padding:0 22px 4px; font-size:12px; color:var(--muted); }
+
+  /* ---------- Switcher / toast ---------- */
+  .switcher{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground); border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:70; }
+  .switcher button{ background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{ font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:230px; text-align:center; }
+  .switcher .label b{ color:var(--accent); }
+  .toast{ position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0; background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; transition:opacity .18s, transform .18s; pointer-events:none; z-index:70; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>UX de l'écran Objectifs — ticket wayfinder 09</span>
+    <span id="variant-hint">Variante A — Liste compacte</span>
+  </div>
+  <div id="app"></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- shared data / helpers ---------------- */
+const OBJECTIF_TYPES = [
+  {v:'Retraite', badge:'RE'},
+  {v:'Achat immobilier', badge:'IM'},
+  {v:'Transmission', badge:'TR'},
+  {v:'Sécurité / urgence', badge:'SE'},
+  {v:'Projet libre', badge:'PL'},
+];
+const HARD_TO_QUANTIFY = ['Projet libre']; // le type où proposer la calculette (ex. FIRE)
+const CURRENT_YEAR = 2026;
+
+function typeBadge(type){
+  const t = OBJECTIF_TYPES.find(o=>o.v===type) || {badge:'?'};
+  return `<span class="type-badge">${t.badge}</span>`;
+}
+function fmtMontant(m){ return m == null ? null : m.toLocaleString('fr-FR') + ' €'; }
+function horizonLabel(year){
+  const delta = year - CURRENT_YEAR;
+  if(delta <= 0) return `${year} (échéance atteinte)`;
+  return `${year} · dans ${delta} an${delta>1?'s':''}`;
+}
+
+const OBJECTIFS_SEED = [
+  {id:1, type:'Retraite', libelle:'Compléter la retraite', horizon:2050, montant:300000, linkedTo:['Assurance-vie / PER','Bourse']},
+  {id:2, type:'Achat immobilier', libelle:'Résidence secondaire', horizon:2028, montant:250000, linkedTo:['Immobilier']},
+  {id:3, type:'Sécurité / urgence', libelle:"Fonds d'urgence 6 mois", horizon:2026, montant:18000, linkedTo:['Liquidités']},
+  {id:4, type:'Projet libre', libelle:'Indépendance financière (FIRE)', horizon:2038, montant:null, linkedTo:['Patrimoine total']},
+];
+let nextId = 5;
+
+// Mock du patrimoine par domaine — pour illustrer l'avancée sur la variante B.
+// Le lien réel Objectif ↔ patrimoine (granularité domaine vs total, méthodes de calcul FIRE) reste à trancher (ticket séparé).
+const DOMAINES = [
+  {k:'Liquidités', val:25000},
+  {k:'Bourse', val:140000},
+  {k:'Immobilier', val:180000},
+  {k:'Assurance-vie / PER', val:60000},
+  {k:'Crypto', val:10000},
+  {k:'Private equity / autres', val:5000},
+];
+const DOMAINES_TOTAL = DOMAINES.reduce((s,d)=>s+d.val, 0);
+const LINK_OPTIONS = ['Patrimoine total', ...DOMAINES.map(d=>d.k)];
+
+function linkedValue(linkedTo){
+  if(!linkedTo || !linkedTo.length) return null;
+  if(linkedTo.includes('Patrimoine total')) return DOMAINES_TOTAL;
+  return linkedTo.reduce((s,k)=> s + (DOMAINES.find(d=>d.k===k)?.val || 0), 0);
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function fieldRow(f, idPrefix){
+  const id = idPrefix + '-' + f.k;
+  let input;
+  if(f.t === 'select'){
+    input = `<select class="field-input" id="${id}">${f.opts.map(o=>`<option value="${o}" ${f.val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  } else if(f.sfx){
+    input = `<div class="field-suffix-wrap"><input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}" value="${f.val==null?'':f.val}" style="padding-right:34px"><span class="field-suffix">${f.sfx}</span></div>`;
+  } else {
+    input = `<input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}" value="${f.val==null?'':f.val}">`;
+  }
+  return `<div class="field-row"><label for="${id}">${f.l}${f.note?`<span class="field-note">${f.note}</span>`:''}</label><div>${input}</div></div>`;
+}
+
+/* ================================================================== */
+/* VARIANT A — compact list + slide-over drawer for create/edit        */
+/* ================================================================== */
+const StateA = { objectifs: JSON.parse(JSON.stringify(OBJECTIFS_SEED)), drawer:null }; // drawer: null | 'new' | {id}
+
+function renderARow(o){
+  const m = fmtMontant(o.montant);
+  return `<div class="obj-row" data-open="${o.id}">
+    ${typeBadge(o.type)}
+    <div><div class="o-name">${o.libelle}</div><div class="o-type">${o.type}</div></div>
+    <div class="o-horizon">${o.horizon}</div>
+    <div class="o-montant ${m?'':'empty'}">${m || 'Non chiffré'}</div>
+    <div class="o-actions"><button data-del="${o.id}" aria-label="Supprimer">×</button></div>
+  </div>`;
+}
+
+function renderADrawerForm(editing){
+  const o = editing ? StateA.objectifs.find(x=>x.id===editing) : {type:'Retraite', libelle:'', horizon:CURRENT_YEAR+5, montant:null};
+  const hardToQuantify = HARD_TO_QUANTIFY.includes(o.type);
+  return `
+    <div class="field-row"><label>Type</label><div><select class="field-input" id="a-f-type">${OBJECTIF_TYPES.map(t=>`<option value="${t.v}" ${o.type===t.v?'selected':''}>${t.v}</option>`).join('')}</select></div></div>
+    <div class="field-row"><label>Libellé</label><div><input class="field-input" id="a-f-libelle" type="text" value="${o.libelle}" placeholder="Ex. Compléter la retraite"></div></div>
+    <div class="field-row"><label>Horizon</label><div><input class="field-input" id="a-f-horizon" type="number" value="${o.horizon}" placeholder="Année"></div></div>
+    <div class="field-row"><label>Montant cible<span class="field-note">Laissez vide si vous ne l'avez pas encore chiffré${hardToQuantify?' — fréquent pour ce type d\'objectif':''}.</span></label><div><div class="field-suffix-wrap"><input class="field-input" id="a-f-montant" type="number" value="${o.montant==null?'':o.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div></div></div>
+    <div class="btn-row">
+      ${editing ? `<button class="btn ghost" id="a-f-delete">Supprimer l'objectif</button>` : '<span></span>'}
+      <button class="btn primary" id="a-f-save">${editing?'Enregistrer':'Créer l\'objectif'}</button>
+    </div>
+  `;
+}
+
+function renderA(){
+  return `
+    <div class="card">
+      <div class="section-head"><h2>Objectifs</h2><button class="btn primary" id="a-new">+ Nouvel objectif</button></div>
+      <div class="list-head"><span></span><span>Objectif</span><span>Horizon</span><span class="r">Montant cible</span><span></span></div>
+      <div class="obj-table">${StateA.objectifs.map(renderARow).join('') || '<div style="padding:24px 22px;color:var(--muted);font-size:13px">Aucun objectif pour l’instant.</div>'}</div>
+    </div>
+
+    <div class="drawer-backdrop ${StateA.drawer?'open':''}" id="a-backdrop"></div>
+    <div class="drawer ${StateA.drawer?'open':''}">
+      <div class="drawer-head"><h2>${StateA.drawer && StateA.drawer!=='new' ? 'Modifier l’objectif' : 'Nouvel objectif'}</h2><button class="drawer-close" id="a-drawer-close">×</button></div>
+      <div class="drawer-body">${StateA.drawer ? renderADrawerForm(StateA.drawer!=='new'?StateA.drawer.id:null) : ''}</div>
+    </div>
+  `;
+}
+function closeADrawer(){ StateA.drawer = null; paint(); }
+function wireA(root){
+  root.querySelectorAll('[data-open]').forEach(r=>r.addEventListener('click', (e)=>{
+    if(e.target.closest('[data-del]')) return;
+    StateA.drawer = {id:+r.dataset.open}; paint();
+  }));
+  root.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    StateA.objectifs = StateA.objectifs.filter(o=>o.id!==+b.dataset.del);
+    if(StateA.drawer && StateA.drawer!=='new' && StateA.drawer.id===+b.dataset.del) StateA.drawer=null;
+    paint(); toast('Objectif supprimé (prototype)');
+  }));
+  const newBtn = root.querySelector('#a-new');
+  if(newBtn) newBtn.addEventListener('click', ()=>{ StateA.drawer = 'new'; paint(); });
+  const close = root.querySelector('#a-drawer-close');
+  if(close) close.addEventListener('click', closeADrawer);
+  const backdrop = root.querySelector('#a-backdrop');
+  if(backdrop) backdrop.addEventListener('click', closeADrawer);
+  const save = root.querySelector('#a-f-save');
+  if(save) save.addEventListener('click', ()=>{
+    const type = root.querySelector('#a-f-type').value;
+    const libelle = root.querySelector('#a-f-libelle').value || 'Nouvel objectif';
+    const horizon = +root.querySelector('#a-f-horizon').value || CURRENT_YEAR+1;
+    const montantRaw = root.querySelector('#a-f-montant').value;
+    const montant = montantRaw === '' ? null : +montantRaw;
+    if(StateA.drawer !== 'new'){
+      const o = StateA.objectifs.find(x=>x.id===StateA.drawer.id);
+      Object.assign(o, {type, libelle, horizon, montant});
+      toast('Objectif enregistré (prototype)');
+    } else {
+      StateA.objectifs.push({id:nextId++, type, libelle, horizon, montant});
+      toast('Objectif créé (prototype)');
+    }
+    StateA.drawer = null; paint();
+  });
+  const del = root.querySelector('#a-f-delete');
+  if(del) del.addEventListener('click', ()=>{
+    StateA.objectifs = StateA.objectifs.filter(o=>o.id!==StateA.drawer.id);
+    StateA.drawer = null; paint(); toast('Objectif supprimé (prototype)');
+  });
+}
+
+/* ================================================================== */
+/* VARIANT B — card grid + inline mini-wizard with FIRE-style calculator */
+/* ================================================================== */
+const TEMPLATES = [
+  {type:'Sécurité / urgence', libelle:"Fonds d'urgence 6 mois", horizonOffset:1},
+  {type:'Retraite', libelle:'Compléter la retraite', horizonOffset:30},
+  {type:'Achat immobilier', libelle:'Projet immobilier', horizonOffset:7},
+  {type:'Transmission', libelle:'Transmission', horizonOffset:25},
+  {type:'Projet libre', libelle:'Indépendance financière (FIRE)', horizonOffset:15},
+];
+const StateB = { objectifs: JSON.parse(JSON.stringify(OBJECTIFS_SEED)), wizard:null, editingId:null, templatesOpen:false, templatesChecked:new Set() };
+// wizard: null | {step, type, libelle, horizon, montant, linkedTo, calcOpen, calcMethod, depenses, depensesMensuelles}
+// editingId: id de l'Objectif en édition rapide sur sa carte (horizon, montant, lien) | null
+
+const FIRE_MULT = 25; // multiplicateur fixe (retrait 4 %) — non ajustable, tranché au ticket 12
+function newWizard(){ return {step:1, type:null, libelle:'', horizon:CURRENT_YEAR+5, montant:null, linkedTo:['Patrimoine total'], calcOpen:false, calcMethod:'retrait', depenses:30000, depensesMensuelles:2000}; }
+
+function linkChips(selected, prefix){
+  return `<div class="linked-chips" id="${prefix}-chips">${LINK_OPTIONS.map(k=>`<span class="chip-toggle ${selected.includes(k)?'selected':''}" data-chip="${k}">${k}</span>`).join('')}</div>`;
+}
+function toggleChip(linkedTo, key){
+  if(key==='Patrimoine total') return ['Patrimoine total'];
+  const withoutTotal = linkedTo.filter(k=>k!=='Patrimoine total');
+  return withoutTotal.includes(key) ? withoutTotal.filter(k=>k!==key) : [...withoutTotal, key];
+}
+
+function progressBar(o){
+  if(o.montant == null) return `<div class="oc-montant empty">Montant non chiffré</div>`;
+  const val = linkedValue(o.linkedTo);
+  const pct = val==null ? null : Math.round(val / o.montant * 100);
+  const done = pct != null && pct >= 100;
+  return `
+    <div class="oc-montant">${fmtMontant(o.montant)}</div>
+    ${pct != null ? `
+      <div class="progress-track"><div class="progress-fill ${done?'done':''}" style="width:${Math.min(100,pct)}%"></div></div>
+      <div class="progress-label"><span>${done?'Objectif atteint ✓':pct+'% atteint'}</span><span>${fmtMontant(val)}</span></div>
+      <div class="linked-chips">${o.linkedTo.map(k=>`<span class="linked-chip">${k}</span>`).join('')}</div>
+    ` : `<div class="field-note">Non lié à une partie du patrimoine — pas d'avancée calculable.</div>`}
+  `;
+}
+
+function renderBCard(o){
+  if(StateB.editingId === o.id){
+    return `<div class="obj-card" style="grid-column:span 1">
+      <div class="oc-top">${typeBadge(o.type)}<div class="oc-name">${o.libelle}</div></div>
+      <div class="mini-field"><label for="b-e-horizon">Horizon</label><input class="field-input" id="b-e-horizon" type="number" value="${o.horizon}"></div>
+      <div class="mini-field"><label for="b-e-montant">Montant cible</label><div class="field-suffix-wrap"><input class="field-input" id="b-e-montant" type="number" value="${o.montant==null?'':o.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div></div>
+      <div class="field-note">Avancée calculée par rapport à :</div>
+      ${linkChips(o.linkedTo||[], 'b-e')}
+      <div class="btn-row" style="padding:8px 0 0"><button class="btn ghost" id="b-e-cancel">Annuler</button><button class="btn primary" id="b-e-save" data-save-edit="${o.id}">Enregistrer</button></div>
+    </div>`;
+  }
+  return `<div class="obj-card">
+    <div class="oc-top">${typeBadge(o.type)}<div class="oc-name">${o.libelle}</div>
+      <button class="btn ghost" style="padding:4px 8px" data-edit-open="${o.id}" aria-label="Modifier">✎</button>
+      <button class="btn ghost" style="padding:4px 8px" data-del="${o.id}" aria-label="Supprimer">×</button>
+    </div>
+    ${progressBar(o)}
+    <div class="oc-meta-row"><span>${o.type}</span><span>${horizonLabel(o.horizon)}</span></div>
+  </div>`;
+}
+
+function renderBWizard(){
+  const w = StateB.wizard;
+  const hardToQuantify = w.type && HARD_TO_QUANTIFY.includes(w.type);
+  let body = '';
+  if(w.step===1){
+    body = `<p class="field-note" style="margin-bottom:12px">Quel type d'objectif ?</p>
+      <div class="type-grid">${OBJECTIF_TYPES.map(t=>`<div class="type-opt ${w.type===t.v?'selected':''}" data-pick-type="${t.v}">${typeBadge(t.v)}<span>${t.v}</span></div>`).join('')}</div>`;
+  } else if(w.step===2){
+    body = `
+      <div class="field-row"><label>Libellé</label><div><input class="field-input" id="b-w-libelle" type="text" value="${w.libelle}" placeholder="Ex. Compléter la retraite"></div></div>
+      <div class="field-row"><label>Horizon</label><div><input class="field-input" id="b-w-horizon" type="number" value="${w.horizon}" placeholder="Année"></div></div>`;
+  } else {
+    body = `
+      <div class="field-row"><label>Montant cible<span class="field-note">Optionnel — laissez vide si non chiffré.</span></label><div><div class="field-suffix-wrap"><input class="field-input" id="b-w-montant" type="number" value="${w.montant==null?'':w.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div></div></div>
+      ${hardToQuantify ? `
+      <div style="padding:0 22px 8px">
+        ${!w.calcOpen ? `<button class="link-btn" id="b-w-calc-open">Besoin d'aide pour l'estimer ? Ouvrir la calculette d'indépendance financière</button>` : `
+        <div class="calc-box">
+          <p class="calc-title">Calculette indépendance financière</p>
+          <div class="method-tabs">
+            <span class="method-tab ${w.calcMethod==='retrait'?'active':''}" data-calc-method="retrait">Règle de retrait (SWR)</span>
+            <span class="method-tab ${w.calcMethod==='niveau_de_vie'?'active':''}" data-calc-method="niveau_de_vie">Niveau de vie actuel</span>
+          </div>
+          ${w.calcMethod==='retrait' ? `
+            <div class="calc-row"><label>Dépenses annuelles visées</label><input class="field-input" id="b-w-depenses" type="number" value="${w.depenses}"></div>
+          ` : `
+            <div class="calc-row"><label>Dépenses mensuelles actuelles</label><input class="field-input" id="b-w-depenses-mens" type="number" value="${w.depensesMensuelles}"></div>
+          `}
+          <div class="calc-result"><span>Montant estimé (règle des 4 %, ${FIRE_MULT}×)</span><b id="b-w-calc-result">${fmtMontant(calcResult(w))}</b></div>
+          <div class="field-note">Objectif brut — ne tient pas compte de la fiscalité au retrait.</div>
+          <div class="btn-row" style="padding:12px 0 0"><button class="link-btn" id="b-w-calc-close">Je préfère laisser le champ vide</button><button class="btn small primary" id="b-w-calc-apply">Utiliser cette estimation</button></div>
+        </div>`}
+      </div>` : ''}
+      <div class="field-note" style="padding:0 22px 4px">Avancée calculée par rapport à :</div>
+      <div style="padding:0 22px 8px">${linkChips(w.linkedTo, 'b-w')}</div>
+    `;
+  }
+  return `
+    <div class="wizard-steps-mini"><span class="${w.step>=1?'on':''}"></span><span class="${w.step>=2?'on':''}"></span><span class="${w.step>=3?'on':''}"></span></div>
+    ${body}
+    <div class="btn-row" style="padding-left:0;padding-right:0">
+      <button class="btn ghost" id="b-w-back">${w.step===1?'Annuler':'← Retour'}</button>
+      <button class="btn primary" id="b-w-next" ${w.step===1 && !w.type ? 'disabled':''}>${w.step===3?'Créer l\'objectif':'Continuer →'}</button>
+    </div>
+  `;
+}
+function calcResult(w){
+  return w.calcMethod==='retrait' ? w.depenses*FIRE_MULT : w.depensesMensuelles*12*FIRE_MULT;
+}
+
+function renderBTemplates(){
+  return `
+    <p class="field-note" style="margin-bottom:12px">Sélectionnez les objectifs à créer — chacun reste modifiable ensuite (horizon, montant cible, lien au patrimoine...).</p>
+    <div>
+      ${TEMPLATES.map((t,i)=>`
+        <label class="template-item">
+          <input type="checkbox" data-tpl="${i}" ${StateB.templatesChecked.has(i)?'checked':''}>
+          ${typeBadge(t.type)}
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${t.libelle}</div><div style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono'">${t.type} · horizon ${CURRENT_YEAR+t.horizonOffset}</div></div>
+        </label>`).join('')}
+    </div>
+    <div class="btn-row" style="padding-left:0;padding-right:0">
+      <button class="btn ghost" id="b-tpl-cancel">Annuler</button>
+      <button class="btn primary" id="b-tpl-create" ${StateB.templatesChecked.size===0?'disabled':''}>Créer ${StateB.templatesChecked.size||''} objectif${StateB.templatesChecked.size>1?'s':''}</button>
+    </div>
+  `;
+}
+
+function renderB(){
+  let trailingCard;
+  if(StateB.wizard) trailingCard = `<div class="obj-card wizard-card-b" style="grid-column:1/-1">${renderBWizard()}</div>`;
+  else if(StateB.templatesOpen) trailingCard = `<div class="obj-card wizard-card-b" style="grid-column:1/-1">${renderBTemplates()}</div>`;
+  else trailingCard = `<div class="add-card" id="b-add">+ Ajouter un objectif</div><div class="add-card" id="b-templates">Partir de modèles suggérés</div>`;
+  return `<div class="obj-grid">${StateB.objectifs.map(renderBCard).join('')}${trailingCard}</div>`;
+}
+function wireB(root){
+  const add = root.querySelector('#b-add');
+  if(add) add.addEventListener('click', ()=>{ StateB.wizard = newWizard(); paint(); });
+  const tplOpen = root.querySelector('#b-templates');
+  if(tplOpen) tplOpen.addEventListener('click', ()=>{ StateB.templatesOpen = true; StateB.templatesChecked = new Set(); paint(); });
+  root.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    StateB.objectifs = StateB.objectifs.filter(o=>o.id!==+b.dataset.del);
+    paint(); toast('Objectif supprimé (prototype)');
+  }));
+  root.querySelectorAll('[data-edit-open]').forEach(b=>b.addEventListener('click', ()=>{ StateB.editingId = +b.dataset.editOpen; paint(); }));
+  const editCancel = root.querySelector('#b-e-cancel');
+  if(editCancel) editCancel.addEventListener('click', ()=>{ StateB.editingId = null; paint(); });
+  if(StateB.editingId != null){
+    const o = StateB.objectifs.find(x=>x.id===StateB.editingId);
+    root.querySelectorAll('#b-e-chips [data-chip]').forEach(el=>el.addEventListener('click', ()=>{ o.linkedTo = toggleChip(o.linkedTo||[], el.dataset.chip); paint(); }));
+    const save = root.querySelector('[data-save-edit]');
+    if(save) save.addEventListener('click', ()=>{
+      o.horizon = +root.querySelector('#b-e-horizon').value || o.horizon;
+      const montantRaw = root.querySelector('#b-e-montant').value;
+      o.montant = montantRaw === '' ? null : +montantRaw;
+      StateB.editingId = null; paint(); toast('Objectif mis à jour (prototype)');
+    });
+  }
+  if(StateB.templatesOpen){
+    root.querySelectorAll('[data-tpl]').forEach(cb=>cb.addEventListener('change', ()=>{
+      const i = +cb.dataset.tpl;
+      if(cb.checked) StateB.templatesChecked.add(i); else StateB.templatesChecked.delete(i);
+      paint();
+    }));
+    const tplCancel = root.querySelector('#b-tpl-cancel');
+    if(tplCancel) tplCancel.addEventListener('click', ()=>{ StateB.templatesOpen = false; paint(); });
+    const tplCreate = root.querySelector('#b-tpl-create');
+    if(tplCreate) tplCreate.addEventListener('click', ()=>{
+      TEMPLATES.forEach((t,i)=>{
+        if(!StateB.templatesChecked.has(i)) return;
+        StateB.objectifs.push({id:nextId++, type:t.type, libelle:t.libelle, horizon:CURRENT_YEAR+t.horizonOffset, montant:null, linkedTo:['Patrimoine total']});
+      });
+      StateB.templatesOpen = false; paint(); toast('Objectifs créés à partir des modèles (prototype)');
+    });
+  }
+  if(!StateB.wizard) return;
+  const w = StateB.wizard;
+  root.querySelectorAll('[data-pick-type]').forEach(el=>el.addEventListener('click', ()=>{ w.type = el.dataset.pickType; paint(); }));
+  root.querySelectorAll('#b-w-chips [data-chip]').forEach(el=>el.addEventListener('click', ()=>{ w.linkedTo = toggleChip(w.linkedTo, el.dataset.chip); paint(); }));
+  const back = root.querySelector('#b-w-back');
+  if(back) back.addEventListener('click', ()=>{
+    if(w.step===1){ StateB.wizard=null; } else { w.step -= 1; }
+    paint();
+  });
+  const calcOpen = root.querySelector('#b-w-calc-open');
+  if(calcOpen) calcOpen.addEventListener('click', ()=>{ w.calcOpen = true; paint(); });
+  const calcClose = root.querySelector('#b-w-calc-close');
+  if(calcClose) calcClose.addEventListener('click', ()=>{ w.calcOpen = false; paint(); });
+  root.querySelectorAll('[data-calc-method]').forEach(el=>el.addEventListener('click', ()=>{ w.calcMethod = el.dataset.calcMethod; paint(); }));
+  const refreshResult = ()=>{ const r = root.querySelector('#b-w-calc-result'); if(r) r.textContent = fmtMontant(calcResult(w)); };
+  const depenses = root.querySelector('#b-w-depenses');
+  if(depenses) depenses.addEventListener('input', ()=>{ w.depenses = +depenses.value || 0; refreshResult(); });
+  const depensesMens = root.querySelector('#b-w-depenses-mens');
+  if(depensesMens) depensesMens.addEventListener('input', ()=>{ w.depensesMensuelles = +depensesMens.value || 0; refreshResult(); });
+  const calcApply = root.querySelector('#b-w-calc-apply');
+  if(calcApply) calcApply.addEventListener('click', ()=>{ w.montant = calcResult(w); w.calcOpen=false; paint(); });
+  const next = root.querySelector('#b-w-next');
+  if(next) next.addEventListener('click', ()=>{
+    if(w.step===2){ w.libelle = root.querySelector('#b-w-libelle').value || 'Nouvel objectif'; w.horizon = +root.querySelector('#b-w-horizon').value || CURRENT_YEAR+1; }
+    if(w.step===3){
+      const montantRaw = root.querySelector('#b-w-montant').value;
+      w.montant = montantRaw === '' ? null : +montantRaw;
+      StateB.objectifs.push({id:nextId++, type:w.type, libelle:w.libelle, horizon:w.horizon, montant:w.montant, linkedTo:w.linkedTo});
+      StateB.wizard = null; paint(); toast('Objectif créé (prototype)'); return;
+    }
+    w.step += 1; paint();
+  });
+}
+
+/* ================================================================== */
+/* VARIANT C — chronological timeline grouped by horizon, deferred field */
+/* ================================================================== */
+const StateC = { objectifs: JSON.parse(JSON.stringify(OBJECTIFS_SEED)), modal:null }; // modal: null | 'new' | {id}
+
+function bucketOf(o){
+  const delta = o.horizon - CURRENT_YEAR;
+  if(delta <= 3) return 'Court terme (≤ 3 ans)';
+  if(delta <= 10) return 'Moyen terme (4 à 10 ans)';
+  return 'Long terme (plus de 10 ans)';
+}
+
+function renderCNode(o){
+  const m = fmtMontant(o.montant);
+  return `<div class="tl-node" data-open="${o.id}">
+    <div class="tl-card">${typeBadge(o.type)}<div class="tl-name">${o.libelle}</div><div class="tl-year">${o.horizon}</div><div class="tl-montant ${m?'':'empty'}">${m || 'Non chiffré'}</div></div>
+  </div>`;
+}
+
+function renderCModalForm(editing){
+  const o = editing ? StateC.objectifs.find(x=>x.id===editing) : {type:'Retraite', libelle:'', horizon:CURRENT_YEAR+5, montant:null};
+  const showMontant = editing ? o.montant != null : false; // par défaut masqué à la création : décision différée
+  return `
+    <div class="field-row"><label>Type</label><div><select class="field-input" id="c-f-type">${OBJECTIF_TYPES.map(t=>`<option value="${t.v}" ${o.type===t.v?'selected':''}>${t.v}</option>`).join('')}</select></div></div>
+    <div class="field-row"><label>Libellé</label><div><input class="field-input" id="c-f-libelle" type="text" value="${o.libelle}" placeholder="Ex. Résidence secondaire"></div></div>
+    <div class="field-row"><label>Horizon</label><div><input class="field-input" id="c-f-horizon" type="number" value="${o.horizon}" placeholder="Année"></div></div>
+    <div id="c-f-montant-wrap" ${showMontant?'':'hidden'}>
+      <div class="field-row"><label>Montant cible</label><div><div class="field-suffix-wrap"><input class="field-input" id="c-f-montant" type="number" value="${o.montant==null?'':o.montant}" style="padding-right:34px"><span class="field-suffix">€</span></div></div></div>
+    </div>
+    <div class="defer-note" id="c-f-defer-note" ${showMontant?'hidden':''}>Vous ne savez pas encore combien il vous faut ? Pas de problème — <button class="link-btn" id="c-f-add-montant">ajouter un montant estimé</button> plus tard, depuis cet écran.</div>
+    <div class="btn-row">
+      ${editing ? `<button class="btn ghost" id="c-f-delete">Supprimer</button>` : '<span></span>'}
+      <button class="btn primary" id="c-f-save">${editing?'Enregistrer':'Ajouter à la frise'}</button>
+    </div>
+  `;
+}
+
+function renderC(){
+  const groups = ['Court terme (≤ 3 ans)','Moyen terme (4 à 10 ans)','Long terme (plus de 10 ans)'];
+  const sorted = [...StateC.objectifs].sort((a,b)=>a.horizon-b.horizon);
+  const byGroup = groups.map(g=>({g, items:sorted.filter(o=>bucketOf(o)===g)})).filter(x=>x.items.length);
+  return `
+    <div class="btn-row" style="padding:0 0 16px"><span></span><button class="btn primary" id="c-new">+ Nouvel objectif</button></div>
+    ${byGroup.map(({g,items})=>`
+      <div class="timeline-group">
+        <div class="tg-label">${g}</div>
+        <div class="timeline">${items.map(renderCNode).join('')}</div>
+      </div>`).join('') || '<div style="padding:24px 0;color:var(--muted);font-size:13px">Aucun objectif pour l’instant.</div>'}
+
+    ${StateC.modal ? `
+      <div class="modal-backdrop" id="c-modal-backdrop">
+        <div class="modal">
+          <div class="modal-head"><h2>${StateC.modal!=='new'?'Modifier l’objectif':'Nouvel objectif'}</h2><button class="modal-close" id="c-modal-close">×</button></div>
+          ${renderCModalForm(StateC.modal!=='new'?StateC.modal.id:null)}
+        </div>
+      </div>` : ''}
+  `;
+}
+function closeCModal(){ StateC.modal = null; paint(); }
+function wireC(root){
+  root.querySelectorAll('[data-open]').forEach(n=>n.addEventListener('click', ()=>{ StateC.modal = {id:+n.dataset.open}; paint(); }));
+  const newBtn = root.querySelector('#c-new');
+  if(newBtn) newBtn.addEventListener('click', ()=>{ StateC.modal = 'new'; paint(); });
+  const close = root.querySelector('#c-modal-close');
+  if(close) close.addEventListener('click', closeCModal);
+  const backdrop = root.querySelector('#c-modal-backdrop');
+  if(backdrop) backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) closeCModal(); });
+  const addMontant = root.querySelector('#c-f-add-montant');
+  if(addMontant) addMontant.addEventListener('click', ()=>{
+    root.querySelector('#c-f-montant-wrap').hidden = false;
+    root.querySelector('#c-f-defer-note').hidden = true;
+  });
+  const save = root.querySelector('#c-f-save');
+  if(save) save.addEventListener('click', ()=>{
+    const type = root.querySelector('#c-f-type').value;
+    const libelle = root.querySelector('#c-f-libelle').value || 'Nouvel objectif';
+    const horizon = +root.querySelector('#c-f-horizon').value || CURRENT_YEAR+1;
+    const montantInput = root.querySelector('#c-f-montant');
+    const montant = (!montantInput || montantInput.value === '') ? null : +montantInput.value;
+    if(StateC.modal !== 'new'){
+      const o = StateC.objectifs.find(x=>x.id===StateC.modal.id);
+      Object.assign(o, {type, libelle, horizon, montant});
+      toast('Objectif enregistré (prototype)');
+    } else {
+      StateC.objectifs.push({id:nextId++, type, libelle, horizon, montant});
+      toast('Objectif ajouté à la frise (prototype)');
+    }
+    StateC.modal = null; paint();
+  });
+  const del = root.querySelector('#c-f-delete');
+  if(del) del.addEventListener('click', ()=>{
+    StateC.objectifs = StateC.objectifs.filter(o=>o.id!==StateC.modal.id);
+    StateC.modal = null; paint(); toast('Objectif supprimé (prototype)');
+  });
+}
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:'Liste compacte + tiroir', hint:'table dense, création/édition dans un panneau latéral, montant cible en simple champ optionnel', render:renderA, wire:wireA },
+  { key:'B', name:'Cartes + calculette guidée', hint:'grille de cartes, création par mini-assistant, calculette d’estimation pour les objectifs difficiles à chiffrer', render:renderB, wire:wireB },
+  { key:'C', name:'Frise chronologique', hint:'objectifs classés par horizon (court/moyen/long terme), montant cible différé par défaut à la création', render:renderC, wire:wireC },
+];
+let current = 0;
+
+function paint(){
+  const v = VARIANTS[current];
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="app-header">
+      <div>
+        <div class="eyebrow">Objectifs — variante ${v.key}</div>
+        <h1>${v.name}</h1>
+        <p class="sub">Créer, lister et configurer vos Objectifs patrimoniaux — accessible depuis la navigation top-level, indépendamment de "Profil".</p>
+      </div>
+    </div>
+    <main>${v.render()}</main>
+  `;
+  v.wire(app);
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.hint}`;
+}
+function go(delta){ current = (current + delta + VARIANTS.length) % VARIANTS.length; paint(); }
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+
+paint();
+</script>

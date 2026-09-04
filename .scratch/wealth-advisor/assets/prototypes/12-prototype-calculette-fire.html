@@ -1,0 +1,362 @@
+<meta charset="utf-8">
+<title>Calculette FIRE — ticket 12</title>
+<!-- Plan : trois variantes de la calculette d'indépendance financière (FIRE), switchables via la barre du bas,
+     hébergées dans un mock de l'étape 3 ("Montant cible") du mini-assistant de création d'un Objectif
+     (voir assets/prototypes/09-ux-objectifs.html, Variante B). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2; --surface:#FFFFFF; --surface-2:#F7F5EC;
+    --ink:#20261F; --muted:#6E6858; --line:#CFC6AC; --line-strong:#B8AD8C;
+    --accent:#96601F; --accent-ink:#FFF8ED; --good:#3F6C4A; --warn:#9A5B22; --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+      --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+      --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --warn:#E0A868; --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15; --surface:#20241D; --surface-2:#262B21;
+    --ink:#EDE8DA; --muted:#A79E88; --line:#3A3E31; --line-strong:#4B5040;
+    --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --warn:#E0A868; --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink); font-family:'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing:antialiased; margin:0; }
+  h1,h2,h3,.display{ font-family:'Fraunces', Georgia, serif; text-wrap:balance; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .proto-banner{ background:var(--ink); color:var(--ground); font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; padding:7px 20px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+
+  .app-header{ padding:28px 32px 8px; max-width:640px; margin:0 auto; width:100%; }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:25px; font-weight:500; margin:4px 0 4px; }
+  .app-header .sub{ font-size:13.5px; color:var(--muted); max-width:60ch; }
+
+  main{ flex:1; max-width:640px; margin:0 auto; width:100%; padding:12px 32px 150px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:20px; }
+
+  .wizard-steps-mini{ display:flex; gap:6px; margin-bottom:16px; }
+  .wizard-steps-mini span{ height:3px; flex:1; border-radius:2px; background:var(--line); }
+  .wizard-steps-mini span.on{ background:var(--accent); }
+  .mock-context{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .type-badge{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--accent); flex:0 0 auto; }
+  .mock-context .mc-name{ font-weight:600; font-size:15px; }
+  .mock-context .mc-meta{ font-size:12px; color:var(--muted); font-family:'IBM Plex Mono'; }
+
+  .field-row{ margin-bottom:14px; }
+  .field-row label{ display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
+  .field-row .field-note{ display:block; font-size:11px; color:var(--muted); margin-top:3px; font-style:italic; }
+  .field-input{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  select.field-input{ font-family:'Public Sans'; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236E6858'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:26px; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .field-suffix-wrap{ position:relative; }
+  .field-suffix{ position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); pointer-events:none; }
+
+  .btn{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn.small{ padding:5px 11px; font-size:12px; }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  .btn-row{ display:flex; gap:10px; padding-top:14px; justify-content:space-between; }
+  .link-btn{ background:none; border:none; padding:0; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  .calc-box{ background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:16px; margin-top:6px; }
+  .calc-box .calc-title{ font-size:13px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:6px; }
+  .calc-row{ margin-bottom:10px; }
+  .calc-row label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px; }
+  .calc-result{ display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px dashed var(--line-strong); margin-top:6px; font-size:13px; }
+  .calc-result b{ font-family:'IBM Plex Mono'; font-size:18px; color:var(--accent); }
+
+  .method-tabs{ display:flex; gap:6px; margin-bottom:14px; }
+  .method-tab{ font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:6px; border:1px solid var(--line); background:var(--surface); cursor:pointer; color:var(--muted); }
+  .method-tab.active{ border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+
+  .segmented{ display:flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:14px; }
+  .segmented .seg-opt{ flex:1; text-align:center; font-size:12px; font-weight:600; padding:7px 10px; border-radius:999px; cursor:pointer; color:var(--muted); }
+  .segmented .seg-opt.active{ background:var(--accent); color:var(--accent-ink); }
+
+  .tooltip-wrap{ position:relative; display:inline-flex; }
+  .info-dot{ display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background:var(--surface); border:1px solid var(--line-strong); color:var(--muted); font-size:10.5px; font-weight:700; cursor:default; }
+  .tooltip-wrap:hover .tooltip-bubble, .tooltip-wrap:focus-within .tooltip-bubble{ opacity:1; pointer-events:auto; transform:translateY(0); }
+  .tooltip-bubble{ position:absolute; bottom:22px; left:50%; transform:translateX(-50%) translateY(4px); width:240px; background:var(--ink); color:var(--ground); font-size:11.5px; line-height:1.45; padding:9px 11px; border-radius:7px; opacity:0; pointer-events:none; transition:opacity .15s, transform .15s; z-index:5; text-align:left; }
+  .tooltip-bubble::after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); }
+
+  .warn-banner{ display:flex; gap:8px; align-items:flex-start; background:color-mix(in srgb, var(--warn) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--warn) 45%, var(--line)); border-radius:8px; padding:9px 11px; margin-top:10px; font-size:11.5px; line-height:1.45; color:var(--ink); }
+  .warn-banner .wb-icon{ flex:0 0 auto; font-size:13px; }
+
+  .slider-wrap{ padding:4px 2px 0; }
+  .slider-wrap input[type=range]{ width:100%; accent-color:var(--accent); }
+  .slider-ticks{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); font-family:'IBM Plex Mono'; margin-top:2px; padding:0 2px; }
+  .slider-ticks span{ cursor:pointer; }
+  .slider-ticks span:hover{ color:var(--accent); }
+  .slider-readout{ display:flex; justify-content:space-between; align-items:baseline; margin:2px 0 6px; }
+  .slider-readout .sr-mult{ font-family:'IBM Plex Mono'; font-size:20px; font-weight:600; color:var(--accent); }
+  .slider-readout .sr-rate{ font-size:12px; color:var(--muted); }
+
+  .card-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:4px; }
+  .pick-card{ border:1.5px solid var(--line); border-radius:9px; padding:12px 10px; cursor:pointer; text-align:center; background:var(--surface); }
+  .pick-card:hover{ border-color:var(--accent); }
+  .pick-card.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, var(--surface)); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .pick-card .pc-label{ font-size:11px; color:var(--muted); font-weight:600; margin-bottom:6px; }
+  .pick-card .pc-rate{ font-size:11px; color:var(--muted); font-family:'IBM Plex Mono'; margin-bottom:8px; }
+  .pick-card .pc-amount{ font-family:'IBM Plex Mono'; font-size:14.5px; font-weight:600; }
+  .pick-card .pc-tag{ font-size:10px; color:var(--muted); margin-top:5px; line-height:1.3; }
+
+  [hidden]{ display:none !important; }
+
+  .switcher{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground); border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:70; }
+  .switcher button{ background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{ font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:260px; text-align:center; }
+  .switcher .label b{ color:var(--accent); }
+  .toast{ position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0; background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; transition:opacity .18s, transform .18s; pointer-events:none; z-index:70; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>Calculette FIRE — ticket wayfinder 12</span>
+    <span id="variant-hint">Variante A</span>
+  </div>
+  <div class="app-header">
+    <div class="eyebrow">Écran Objectifs · mini-assistant de création · étape 3</div>
+    <h1>Montant cible</h1>
+    <p class="sub">Contexte : création de l'Objectif "Indépendance financière (FIRE)" (type difficile à chiffrer), reprend l'étape 3 du prototype de l'écran Objectifs.</p>
+  </div>
+  <div id="app"></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- shared ---------------- */
+const CURRENT_YEAR = 2026;
+const MOCK_OBJECTIF = { libelle:'Indépendance financière (FIRE)', type:'Projet libre', horizon: CURRENT_YEAR + 15 };
+const MULT_OPTIONS = [
+  { mult:25,   rate:'4 %',   tag:'référence historique (règle des 4 %, Trinity/Bengen)' },
+  { mult:28.6, rate:'3,5 %', tag:null },
+  { mult:33,   rate:'3 %',   tag:'plus prudent — cité pour les horizons FIRE longs (40-60 ans), extrapolation communautaire' },
+];
+const WARN_TEXT = "Cette estimation est un objectif brut : elle ne tient pas compte de la fiscalité (impôts, prélèvements sociaux) qui s'appliquera au moment des retraits. Elle sera comparée à votre patrimoine net dans la barre de progression de l'Objectif.";
+
+function fmtMontant(m){ return m == null ? '—' : Math.round(m).toLocaleString('fr-FR') + ' €'; }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(()=>t.classList.remove('show'), 1700);
+}
+function calcFromInputs(method, depenses, depensesMensuelles, mult){
+  return method==='retrait' ? depenses*mult : depensesMensuelles*12*mult;
+}
+function mockContext(){
+  return `<div class="mock-context">
+    <span class="type-badge">PL</span>
+    <div><div class="mc-name">${MOCK_OBJECTIF.libelle}</div><div class="mc-meta">${MOCK_OBJECTIF.type} · horizon ${MOCK_OBJECTIF.horizon}</div></div>
+  </div>`;
+}
+function wizardSteps(){ return `<div class="wizard-steps-mini"><span class="on"></span><span class="on"></span><span class="on"></span></div>`; }
+
+/* ================================================================== */
+/* VARIANT A — onglets de méthode + multiplicateur en menu, avertissement en info-bulle */
+/* ================================================================== */
+const StateA = { method:'retrait', depenses:30000, depensesMensuelles:2500, mult:25, montant:null, calcOpen:true };
+
+function renderA(){
+  const s = StateA;
+  const result = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, s.mult);
+  return `<div class="card">
+    ${wizardSteps()}
+    ${mockContext()}
+    <div class="field-row"><label>Montant cible <span class="field-note">Optionnel — laissez vide si non chiffré.</span></label>
+      <div class="field-suffix-wrap"><input class="field-input" id="a-montant" type="number" value="${s.montant==null?'':s.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div>
+    </div>
+    ${!s.calcOpen ? `<button class="link-btn" id="a-calc-open">Besoin d'aide pour l'estimer ? Ouvrir la calculette d'indépendance financière</button>` : `
+    <div class="calc-box">
+      <p class="calc-title">Calculette indépendance financière</p>
+      <div class="method-tabs">
+        <span class="method-tab ${s.method==='retrait'?'active':''}" data-method="retrait">Règle de retrait (SWR)</span>
+        <span class="method-tab ${s.method==='niveau_de_vie'?'active':''}" data-method="niveau_de_vie">Niveau de vie actuel</span>
+      </div>
+      ${s.method==='retrait' ? `
+        <div class="calc-row"><label>Dépenses annuelles visées à la retraite</label><div class="field-suffix-wrap"><input class="field-input" id="a-depenses" type="number" value="${s.depenses}" style="padding-right:34px"><span class="field-suffix">€/an</span></div></div>
+      ` : `
+        <div class="calc-row"><label>Dépenses mensuelles actuelles</label><div class="field-suffix-wrap"><input class="field-input" id="a-depenses-mens" type="number" value="${s.depensesMensuelles}" style="padding-right:34px"><span class="field-suffix">€/mois</span></div></div>
+      `}
+      <div class="calc-row"><label>Multiplicateur (taux de retrait)</label>
+        <select class="field-input" id="a-mult">
+          ${MULT_OPTIONS.map(o=>`<option value="${o.mult}" ${s.mult==o.mult?'selected':''}>${o.mult}× — retrait ${o.rate}${o.mult==25?' (défaut)':''}</option>`).join('')}
+        </select>
+        <span class="field-note">${MULT_OPTIONS.find(o=>o.mult==s.mult)?.tag || ''}</span>
+      </div>
+      <div class="calc-result">
+        <span style="display:flex;align-items:center;gap:6px">Montant estimé
+          <span class="tooltip-wrap" tabindex="0"><span class="info-dot">i</span><span class="tooltip-bubble">${WARN_TEXT}</span></span>
+        </span>
+        <b>${fmtMontant(result)}</b>
+      </div>
+      <div class="btn-row"><button class="link-btn" id="a-calc-close">Je préfère laisser le champ vide</button><button class="btn small primary" id="a-calc-apply">Utiliser cette estimation</button></div>
+    </div>`}
+  </div>`;
+}
+function wireA(root){
+  const s = StateA;
+  const open = root.querySelector('#a-calc-open'); if(open) open.addEventListener('click', ()=>{ s.calcOpen=true; paint(); });
+  const close = root.querySelector('#a-calc-close'); if(close) close.addEventListener('click', ()=>{ s.calcOpen=false; paint(); });
+  root.querySelectorAll('[data-method]').forEach(el=>el.addEventListener('click', ()=>{ s.method = el.dataset.method; paint(); }));
+  const dep = root.querySelector('#a-depenses'); if(dep) dep.addEventListener('input', ()=>{ s.depenses = +dep.value || 0; paint(); });
+  const depM = root.querySelector('#a-depenses-mens'); if(depM) depM.addEventListener('input', ()=>{ s.depensesMensuelles = +depM.value || 0; paint(); });
+  const mult = root.querySelector('#a-mult'); if(mult) mult.addEventListener('change', ()=>{ s.mult = +mult.value; paint(); });
+  const montant = root.querySelector('#a-montant'); if(montant) montant.addEventListener('input', ()=>{ s.montant = montant.value===''?null:+montant.value; });
+  const apply = root.querySelector('#a-calc-apply'); if(apply) apply.addEventListener('click', ()=>{ s.montant = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, s.mult); s.calcOpen=false; paint(); toast('Estimation appliquée au montant cible (prototype)'); });
+}
+
+/* ================================================================== */
+/* VARIANT B — champ unifié + slider continu de taux de retrait, avertissement en bandeau permanent */
+/* ================================================================== */
+const StateB = { method:'retrait', depenses:30000, depensesMensuelles:2500, mult:25, montant:null, calcOpen:true };
+
+function renderB(){
+  const s = StateB;
+  const result = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, s.mult);
+  const rate = (100/s.mult);
+  return `<div class="card">
+    ${wizardSteps()}
+    ${mockContext()}
+    <div class="field-row"><label>Montant cible <span class="field-note">Optionnel — laissez vide si non chiffré.</span></label>
+      <div class="field-suffix-wrap"><input class="field-input" id="b-montant" type="number" value="${s.montant==null?'':s.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div>
+    </div>
+    ${!s.calcOpen ? `<button class="link-btn" id="b-calc-open">Besoin d'aide pour l'estimer ? Ouvrir la calculette d'indépendance financière</button>` : `
+    <div class="calc-box">
+      <p class="calc-title">Calculette indépendance financière</p>
+      <div class="segmented">
+        <div class="seg-opt ${s.method==='retrait'?'active':''}" data-method="retrait">Dépenses visées</div>
+        <div class="seg-opt ${s.method==='niveau_de_vie'?'active':''}" data-method="niveau_de_vie">Niveau de vie actuel</div>
+      </div>
+      ${s.method==='retrait' ? `
+        <div class="calc-row"><label>Dépenses annuelles visées à la retraite</label><div class="field-suffix-wrap"><input class="field-input" id="b-depenses" type="number" value="${s.depenses}" style="padding-right:34px"><span class="field-suffix">€/an</span></div></div>
+      ` : `
+        <div class="calc-row"><label>Dépenses mensuelles actuelles</label><div class="field-suffix-wrap"><input class="field-input" id="b-depenses-mens" type="number" value="${s.depensesMensuelles}" style="padding-right:34px"><span class="field-suffix">€/mois</span></div></div>
+      `}
+      <div class="calc-row">
+        <label>Taux de retrait annuel</label>
+        <div class="slider-readout"><span class="sr-mult">${s.mult}×</span><span class="sr-rate">retrait ${rate.toFixed(1)} %</span></div>
+        <div class="slider-wrap"><input type="range" id="b-slider" min="20" max="40" step="0.1" value="${s.mult}"></div>
+        <div class="slider-ticks">
+          ${MULT_OPTIONS.map(o=>`<span data-snap="${o.mult}">${o.mult}× (${o.rate})</span>`).join('')}
+        </div>
+      </div>
+      <div class="calc-result"><span>Montant estimé</span><b>${fmtMontant(result)}</b></div>
+      <div class="warn-banner"><span class="wb-icon">⚠</span><span>${WARN_TEXT}</span></div>
+      <div class="btn-row"><button class="link-btn" id="b-calc-close">Je préfère laisser le champ vide</button><button class="btn small primary" id="b-calc-apply">Utiliser cette estimation</button></div>
+    </div>`}
+  </div>`;
+}
+function wireB(root){
+  const s = StateB;
+  const open = root.querySelector('#b-calc-open'); if(open) open.addEventListener('click', ()=>{ s.calcOpen=true; paint(); });
+  const close = root.querySelector('#b-calc-close'); if(close) close.addEventListener('click', ()=>{ s.calcOpen=false; paint(); });
+  root.querySelectorAll('[data-method]').forEach(el=>el.addEventListener('click', ()=>{ s.method = el.dataset.method; paint(); }));
+  const dep = root.querySelector('#b-depenses'); if(dep) dep.addEventListener('input', ()=>{ s.depenses = +dep.value || 0; paint(); });
+  const depM = root.querySelector('#b-depenses-mens'); if(depM) depM.addEventListener('input', ()=>{ s.depensesMensuelles = +depM.value || 0; paint(); });
+  const slider = root.querySelector('#b-slider'); if(slider) slider.addEventListener('input', ()=>{ s.mult = +slider.value; paint(); });
+  root.querySelectorAll('[data-snap]').forEach(el=>el.addEventListener('click', ()=>{ s.mult = +el.dataset.snap; paint(); }));
+  const montant = root.querySelector('#b-montant'); if(montant) montant.addEventListener('input', ()=>{ s.montant = montant.value===''?null:+montant.value; });
+  const apply = root.querySelector('#b-calc-apply'); if(apply) apply.addEventListener('click', ()=>{ s.montant = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, s.mult); s.calcOpen=false; paint(); toast('Estimation appliquée au montant cible (prototype)'); });
+}
+
+/* ================================================================== */
+/* VARIANT C — comparaison de 3 scénarios en cartes cliquables, pas de sélection préalable du multiplicateur */
+/* ================================================================== */
+const StateC = { method:'retrait', depenses:30000, depensesMensuelles:2500, picked:25, montant:null, calcOpen:true };
+
+function renderC(){
+  const s = StateC;
+  return `<div class="card">
+    ${wizardSteps()}
+    ${mockContext()}
+    <div class="field-row"><label>Montant cible <span class="field-note">Optionnel — laissez vide si non chiffré.</span></label>
+      <div class="field-suffix-wrap"><input class="field-input" id="c-montant" type="number" value="${s.montant==null?'':s.montant}" placeholder="Non chiffré" style="padding-right:34px"><span class="field-suffix">€</span></div>
+    </div>
+    ${!s.calcOpen ? `<button class="link-btn" id="c-calc-open">Besoin d'aide pour l'estimer ? Ouvrir la calculette d'indépendance financière</button>` : `
+    <div class="calc-box">
+      <p class="calc-title">Calculette indépendance financière</p>
+      <div class="segmented">
+        <div class="seg-opt ${s.method==='retrait'?'active':''}" data-method="retrait">Dépenses visées</div>
+        <div class="seg-opt ${s.method==='niveau_de_vie'?'active':''}" data-method="niveau_de_vie">Niveau de vie actuel</div>
+      </div>
+      ${s.method==='retrait' ? `
+        <div class="calc-row"><label>Dépenses annuelles visées à la retraite</label><div class="field-suffix-wrap"><input class="field-input" id="c-depenses" type="number" value="${s.depenses}" style="padding-right:34px"><span class="field-suffix">€/an</span></div></div>
+      ` : `
+        <div class="calc-row"><label>Dépenses mensuelles actuelles</label><div class="field-suffix-wrap"><input class="field-input" id="c-depenses-mens" type="number" value="${s.depensesMensuelles}" style="padding-right:34px"><span class="field-suffix">€/mois</span></div></div>
+      `}
+      <div class="calc-row"><label>Choisissez un scénario</label>
+        <div class="card-picker">
+          ${MULT_OPTIONS.map(o=>{
+            const amount = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, o.mult);
+            return `<div class="pick-card ${s.picked===o.mult?'selected':''}" data-pick="${o.mult}">
+              <div class="pc-label">${o.mult===25?'Standard':o.mult===28.6?'Modéré':'Prudent'}</div>
+              <div class="pc-rate">${o.mult}× · ${o.rate}</div>
+              <div class="pc-amount">${fmtMontant(amount)}</div>
+              ${o.tag ? `<div class="pc-tag">${o.tag}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="warn-banner"><span class="wb-icon">⚠</span><span>${WARN_TEXT}</span></div>
+      <div class="btn-row"><button class="link-btn" id="c-calc-close">Je préfère laisser le champ vide</button><button class="btn small primary" id="c-calc-apply">Utiliser le scénario "${s.picked===25?'Standard':s.picked===28.6?'Modéré':'Prudent'}"</button></div>
+    </div>`}
+  </div>`;
+}
+function wireC(root){
+  const s = StateC;
+  const open = root.querySelector('#c-calc-open'); if(open) open.addEventListener('click', ()=>{ s.calcOpen=true; paint(); });
+  const close = root.querySelector('#c-calc-close'); if(close) close.addEventListener('click', ()=>{ s.calcOpen=false; paint(); });
+  root.querySelectorAll('[data-method]').forEach(el=>el.addEventListener('click', ()=>{ s.method = el.dataset.method; paint(); }));
+  const dep = root.querySelector('#c-depenses'); if(dep) dep.addEventListener('input', ()=>{ s.depenses = +dep.value || 0; paint(); });
+  const depM = root.querySelector('#c-depenses-mens'); if(depM) depM.addEventListener('input', ()=>{ s.depensesMensuelles = +depM.value || 0; paint(); });
+  root.querySelectorAll('[data-pick]').forEach(el=>el.addEventListener('click', ()=>{ s.picked = +el.dataset.pick; paint(); }));
+  const montant = root.querySelector('#c-montant'); if(montant) montant.addEventListener('input', ()=>{ s.montant = montant.value===''?null:+montant.value; });
+  const apply = root.querySelector('#c-calc-apply'); if(apply) apply.addEventListener('click', ()=>{ s.montant = calcFromInputs(s.method, s.depenses, s.depensesMensuelles, s.picked); s.calcOpen=false; paint(); toast('Estimation appliquée au montant cible (prototype)'); });
+}
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:'Onglets + menu, avertissement en info-bulle', hint:"méthode par onglets, multiplicateur en menu déroulant (défaut 25×), avertissement objectif brut discret derrière une info-bulle ⓘ", render:renderA, wire:wireA },
+  { key:'B', name:'Slider continu, avertissement en bandeau', hint:"champ dépenses + méthode en interrupteur, taux de retrait ajustable en continu par slider (avec repères 25×/28,6×/33×), avertissement objectif brut en bandeau permanent", render:renderB, wire:wireB },
+  { key:'C', name:'Comparaison de 3 scénarios en cartes', hint:"pas de multiplicateur choisi au préalable — 3 cartes de résultat (Standard/Modéré/Prudent) calculées en parallèle, sélection en cliquant la carte retenue", render:renderC, wire:wireC },
+];
+let current = 0;
+function paint(){
+  const v = VARIANTS[current];
+  const app = document.getElementById('app');
+  app.innerHTML = v.render();
+  v.wire(app);
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.hint}`;
+}
+function go(delta){ current = (current + delta + VARIANTS.length) % VARIANTS.length; paint(); }
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+paint();
+</script>

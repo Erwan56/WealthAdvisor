@@ -1,0 +1,15 @@
+{
+  "name": "wealth-advisor",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:web": "npm run dev --workspace=web",
+    "build:web": "npm run build --workspace=web",
+    "start": "node scripts/start.mjs"
+  }
+}

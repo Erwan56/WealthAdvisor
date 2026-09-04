@@ -1,0 +1,571 @@
+<title>Navigation multi-Entités</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2; --surface:#FFFFFF; --surface-2:#F7F5EC; --ink:#20261F; --muted:#6E6858;
+    --line:#CFC6AC; --line-strong:#B8AD8C; --accent:#96601F; --accent-ink:#FFF8ED; --good:#3F6C4A; --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15; --surface:#20241D; --surface-2:#262B21; --ink:#EDE8DA; --muted:#A79E88;
+      --line:#3A3E31; --line-strong:#4B5040; --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15; --surface:#20241D; --surface-2:#262B21; --ink:#EDE8DA; --muted:#A79E88;
+    --line:#3A3E31; --line-strong:#4B5040; --accent:#D0964A; --accent-ink:#20150A; --good:#7FBB8B; --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+  *{ box-sizing:border-box; }
+  body{ background:var(--ground); color:var(--ink); font-family:'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Fraunces', Georgia, serif; text-wrap:balance; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .proto-banner{
+    background:var(--ink); color:var(--ground); font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    letter-spacing:.06em; text-transform:uppercase; padding:7px 20px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+  .proto-note{
+    background:color-mix(in srgb, var(--accent) 12%, var(--surface)); border-bottom:1px solid var(--line);
+    font-size:12px; color:var(--muted); padding:8px 20px; text-align:center;
+  }
+  .proto-note b{ color:var(--ink); }
+
+  .app-header{ padding:20px 32px 0; max-width:1120px; margin:0 auto; width:100%; }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:26px; font-weight:500; margin:4px 0 6px; }
+  .app-header .hint{ font-size:12.5px; color:var(--muted); margin:0 0 18px; max-width:640px; }
+
+  .screen-toggle{ display:inline-flex; border:1px solid var(--line-strong); border-radius:999px; overflow:hidden; margin-bottom:16px; }
+  .screen-toggle button{ font-family:'Public Sans'; font-size:12.5px; font-weight:600; padding:7px 16px; border:none; background:var(--surface); color:var(--muted); cursor:pointer; }
+  .screen-toggle button + button{ border-left:1px solid var(--line-strong); }
+  .screen-toggle button.active{ background:var(--accent); color:var(--accent-ink); }
+
+  main{ flex:1; max-width:1120px; margin:0 auto; width:100%; padding:0 32px 140px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+
+  .btn{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn.sm{ padding:6px 11px; font-size:12.5px; }
+  .btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  /* ---------- shared: entity badge / avatar ---------- */
+  .ent-avatar{
+    width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono'; font-size:11px; font-weight:600; flex:0 0 auto;
+  }
+  .ent-type-personnelle{ background:color-mix(in srgb, var(--good) 22%, var(--surface)); color:var(--good); }
+  .ent-type-activite{ background:color-mix(in srgb, var(--accent) 20%, var(--surface)); color:var(--accent); }
+  .ent-type-immobiliere{ background:color-mix(in srgb, #5F7BA6 24%, var(--surface)); color:#5F7BA6; }
+  .ent-type-tag{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-family:'IBM Plex Mono'; color:var(--muted); }
+
+  /* ---------- domain rail (from ticket 06) ---------- */
+  .dash-shell{ display:flex; gap:24px; align-items:flex-start; }
+  .dash-main{ flex:1; min-width:0; }
+  .domain-rail{ display:flex; flex-direction:column; gap:2px; width:190px; flex:0 0 auto; }
+  .rail-item{ font-family:'Public Sans'; font-size:13.5px; font-weight:600; color:var(--muted); background:none; border:none; text-align:left; padding:10px 14px; cursor:pointer; border-left:2px solid transparent; border-radius:0 6px 6px 0; }
+  .rail-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .rail-item.active{ color:var(--accent); border-left-color:var(--accent); background:var(--surface-2); }
+  .rail-item[disabled]{ opacity:.35; cursor:not-allowed; }
+  .rail-item[disabled]:hover{ background:none; color:var(--muted); }
+
+  .dash-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; }
+  .dash-toolbar h2{ font-size:19px; font-weight:500; margin:0; }
+  .ledger-row{ border-bottom:1px solid var(--line); }
+  .ledger-row:last-child{ border-bottom:none; }
+  .ledger-row-head{ display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center; padding:13px 20px; }
+  .ledger-row-head .name{ font-weight:600; font-size:14px; }
+  .ledger-row-head .sub{ font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .ledger-row-head .val{ font-family:'IBM Plex Mono'; font-size:14px; text-align:right; }
+  .env-group-label{ padding:14px 20px 4px; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+  .ledger-row-head-all{ display:grid; grid-template-columns:1fr 180px auto; gap:14px; align-items:center; padding:13px 20px; }
+  .ledger-row-head-all .name{ font-weight:600; font-size:14px; }
+  .ledger-row-head-all .sub{ font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .ledger-row-head-all .val{ font-family:'IBM Plex Mono'; font-size:14px; text-align:right; }
+  .ent-cell{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); }
+  .ent-avatar.sm{ width:20px; height:20px; border-radius:6px; font-size:9.5px; }
+  .muted-hint{ font-size:12px; color:var(--muted); font-style:italic; }
+  .consolidated-row{ display:grid; grid-template-columns:170px 1fr auto; gap:14px; align-items:center; padding:11px 20px; border-bottom:1px solid var(--line); }
+  .consolidated-row:last-child{ border-bottom:none; }
+  .consolidated-row .val{ font-family:'IBM Plex Mono'; font-size:13.5px; text-align:right; }
+  .consolidated-row .bar{ height:6px; border-radius:99px; background:var(--surface-2); overflow:hidden; }
+  .consolidated-row .bar > span{ display:block; height:100%; background:var(--accent); border-radius:99px; }
+
+  /* ---------- reporting mini mock ---------- */
+  .kpi-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+  .kpi-card{ padding:16px 18px; }
+  .kpi-label{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .kpi-value{ font-size:22px; font-weight:600; margin:4px 0 2px; }
+  .kpi-delta{ font-size:11.5px; color:var(--good); }
+  .report-table{ width:100%; border-collapse:collapse; }
+  .report-table td{ padding:11px 20px; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .report-table tr:last-child td{ border-bottom:none; }
+  .report-table td.val{ font-family:'IBM Plex Mono'; text-align:right; }
+  .swatch{ width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:8px; }
+
+  /* ================= VARIANT A — onglets d'Entité au-dessus du rail ================= */
+  .entity-tabs{ display:flex; gap:2px; border-bottom:1px solid var(--line); margin-bottom:16px; overflow-x:auto; }
+  .entity-tab{
+    display:flex; align-items:center; gap:8px; font-family:'Public Sans'; font-size:13px; font-weight:600; color:var(--muted);
+    background:none; border:none; padding:9px 14px; cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .entity-tab:hover{ color:var(--ink); }
+  .entity-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+  .entity-tab.add{ color:var(--accent); font-weight:600; }
+
+  /* ================= VARIANT B — dropdown dans le header ================= */
+  .workspace-switch{ position:relative; display:inline-block; margin-bottom:16px; }
+  .workspace-btn{
+    display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px;
+    padding:8px 12px; cursor:pointer; font-family:'Public Sans'; box-shadow:var(--shadow);
+  }
+  .workspace-btn .ws-label{ text-align:left; }
+  .workspace-btn .ws-name{ font-size:13.5px; font-weight:600; line-height:1.2; }
+  .workspace-btn .ws-sub{ font-size:11px; color:var(--muted); }
+  .workspace-btn .chev{ margin-left:6px; color:var(--muted); font-size:11px; }
+  .ws-menu{
+    position:absolute; top:calc(100% + 6px); left:0; width:280px; background:var(--surface); border:1px solid var(--line-strong);
+    border-radius:10px; box-shadow:var(--shadow); z-index:20; overflow:hidden; display:none;
+  }
+  .ws-menu.open{ display:block; }
+  .ws-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--line); }
+  .ws-item:last-child{ border-bottom:none; }
+  .ws-item:hover{ background:var(--surface-2); }
+  .ws-item.active{ background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .ws-item .ws-name{ font-size:13px; font-weight:600; }
+  .ws-item .ws-sub{ font-size:11px; color:var(--muted); }
+  .ws-item.add{ color:var(--accent); font-weight:600; font-size:13px; }
+
+  /* ================= VARIANT C — rail imbriqué Entité > Domaine ================= */
+  .nested-rail{ width:220px; flex:0 0 auto; display:flex; flex-direction:column; gap:14px; }
+  .nested-group{ display:flex; flex-direction:column; gap:1px; }
+  .nested-group-head{
+    display:flex; align-items:center; gap:8px; padding:6px 10px; font-family:'IBM Plex Mono'; font-size:11px;
+    text-transform:uppercase; letter-spacing:.05em; color:var(--muted); cursor:pointer;
+  }
+  .nested-group-head:hover{ color:var(--ink); }
+  .nested-group-head .chev{ transition:transform .15s; font-size:10px; }
+  .nested-group.collapsed .chev{ transform:rotate(-90deg); }
+  .nested-group.collapsed .nested-items{ display:none; }
+  .nested-items{ display:flex; flex-direction:column; gap:1px; padding-left:4px; }
+  .nested-item{ font-family:'Public Sans'; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; text-align:left; padding:8px 14px; cursor:pointer; border-left:2px solid transparent; border-radius:0 6px 6px 0; }
+  .nested-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .nested-item.active{ color:var(--accent); border-left-color:var(--accent); background:var(--surface-2); }
+  .nested-consolidated{ font-family:'Public Sans'; font-size:13px; font-weight:700; color:var(--muted); background:none; border:none; text-align:left; padding:9px 10px; cursor:pointer; border-left:2px solid transparent; border-radius:0 6px 6px 0; display:flex; align-items:center; gap:8px; }
+  .nested-consolidated:hover{ background:var(--surface-2); color:var(--ink); }
+  .nested-consolidated.active{ color:var(--accent); border-left-color:var(--accent); background:var(--surface-2); }
+  .nested-add{ font-family:'Public Sans'; font-size:12.5px; font-weight:600; color:var(--accent); background:none; border:1px dashed var(--line-strong); border-radius:7px; text-align:left; padding:8px 10px; cursor:pointer; }
+  .nested-add:hover{ border-color:var(--accent); background:var(--surface-2); }
+
+  /* ---------- Entity creation panel (shared) ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(20,22,17,0.45); display:none; align-items:center; justify-content:center; z-index:40; }
+  .overlay.open{ display:flex; }
+  .create-panel{ width:380px; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .create-panel-head{ padding:18px 20px 12px; border-bottom:1px solid var(--line); }
+  .create-panel-head h3{ font-size:17px; font-weight:500; margin:0 0 3px; }
+  .create-panel-head p{ font-size:12.5px; color:var(--muted); margin:0; }
+  .create-panel-body{ padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+  .create-panel-body label{ font-size:12px; color:var(--muted); font-weight:600; display:block; margin-bottom:6px; }
+  .field-input{ width:100%; font-family:'Public Sans'; font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:9px 10px; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .type-choice{ display:flex; flex-direction:column; gap:8px; }
+  .type-choice label{ margin:0; }
+  .type-option{ display:flex; align-items:flex-start; gap:10px; border:1.5px solid var(--line-strong); border-radius:8px; padding:11px 12px; cursor:pointer; }
+  .type-option:hover{ border-color:var(--accent); }
+  .type-option.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .type-option input{ margin-top:2px; accent-color:var(--accent); }
+  .type-option .to-name{ font-size:13.5px; font-weight:600; }
+  .type-option .to-desc{ font-size:11.5px; color:var(--muted); }
+  .btn-row{ display:flex; gap:10px; padding:14px 20px; border-top:1px solid var(--line); }
+
+  .switcher{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground); border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:50; }
+  .switcher button{ background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{ font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:260px; text-align:center; }
+  .switcher .label b{ color:var(--accent); }
+  .toast{ position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0; background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; transition:opacity .18s, transform .18s; pointer-events:none; z-index:50; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  [hidden]{ display:none !important; }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>UX multi-Entités — création et navigation — ticket wayfinder 29</span>
+    <span id="variant-hint">Variante A — Onglets d'Entité</span>
+  </div>
+  <div class="proto-note">Le dashboard de saisie (ticket <b>06</b>) exige toujours une Entité précise (on ne saisit pas une Ligne "consolidée") ; le reporting (ticket <b>07</b>) propose en plus une vue <b>Toutes les Entités</b> agrégée, avec détail par Entité au clic — bascule <b>Dashboard / Reporting</b> ci-dessous pour comparer.</div>
+
+  <div id="app"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="create-panel">
+    <div class="create-panel-head">
+      <h3>Nouvelle Entité</h3>
+      <p>Un conteneur pour un patrimoine détenu à part — société, SCI...</p>
+    </div>
+    <div class="create-panel-body">
+      <div>
+        <label for="ent-libelle">Libellé</label>
+        <input class="field-input" id="ent-libelle" type="text" placeholder="ex. SCI Les Tilleuls">
+      </div>
+      <div>
+        <label>Type</label>
+        <div class="type-choice" id="ent-type-choice">
+          <label class="type-option" data-type="activite">
+            <input type="radio" name="ent-type" value="activite">
+            <div><div class="to-name">Activité de service</div><div class="to-desc">Société d'exercice indépendant, conseil, prestations...</div></div>
+          </label>
+          <label class="type-option" data-type="immobiliere">
+            <input type="radio" name="ent-type" value="immobiliere">
+            <div><div class="to-name">Détention immobilière</div><div class="to-desc">SCI ou structure dédiée à porter des biens.</div></div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="ent-create-confirm">Créer l'Entité</button>
+      <button class="btn ghost" id="ent-create-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- shared data ---------------- */
+const ENTITIES = [
+  { key:'perso', name:'Perso', type:'personnelle', typeLabel:'Personnelle', initial:'P', locked:true,
+    domains:['liquidites','bourse','immobilier','av_per','crypto','pe_scpi'] },
+  { key:'sarl', name:'SARL Dupont Conseil', type:'activite', typeLabel:'Activité de service', initial:'S', locked:false,
+    domains:['liquidites','bourse','pe_scpi'] },
+  { key:'sci', name:'SCI Les Tilleuls', type:'immobiliere', typeLabel:'Détention immobilière', initial:'T', locked:false,
+    domains:['liquidites','immobilier'] },
+];
+const DOMAIN_LABELS = { liquidites:'Liquidités', bourse:'Bourse', immobilier:'Immobilier', av_per:'Assurance-vie / PER', crypto:'Crypto', pe_scpi:'Private equity / SCPI' };
+const DOMAIN_COLORS = { liquidites:'#5F7BA6', bourse:'#96601F', immobilier:'#7A8B5E', av_per:'#A65F8E', crypto:'#C9A227', pe_scpi:'#6E6858' };
+const DOMAIN_KEYS = Object.keys(DOMAIN_LABELS);
+const SEED = {
+  liquidites:[{name:'Livret A — Boursorama',sub:'Livret A',val:'12 400 €'},{name:'LDDS — BNP',sub:'LDDS',val:'6 000 €'}],
+  bourse:[{name:'PEA — Boursorama',sub:'PEA · actif',val:'53 100 €'}],
+  immobilier:[{name:'Appartement Lyon 7e',sub:'Résidence principale',val:'310 000 €'}],
+  av_per:[{name:'Linxea Spirit 2',sub:'Assurance-vie · actif',val:'53 300 €'}],
+  crypto:[{name:'Binance',sub:'Plateforme étrangère',val:'15 700 €'}],
+  pe_scpi:[{name:'SCPI Corum Origin',sub:'SCPI · blocage 8 ans',val:'18 900 €'}],
+};
+const SEED_SARL = { liquidites:[{name:'Compte courant SARL',sub:'BTP Banque',val:'28 000 €'}], bourse:[{name:'CTO — Degiro Pro',sub:'CTO · actif',val:'41 200 €'}], pe_scpi:[{name:'FCPR Croissance',sub:'FCPR',val:'12 000 €'}] };
+const SEED_SCI = { liquidites:[{name:'Compte courant SCI',sub:'BTP Banque',val:'4 100 €'}], immobilier:[{name:'Local commercial Nantes',sub:'Loué (nu)',val:'186 000 €'}] };
+function seedFor(entKey, dKey){
+  if(entKey==='sarl') return SEED_SARL[dKey] || [];
+  if(entKey==='sci') return SEED_SCI[dKey] || [];
+  return SEED[dKey] || [];
+}
+const CONSOLIDATED = [
+  { key:'liquidites', total:'50 500 €', pct:9 },
+  { key:'bourse', total:'94 300 €', pct:17 },
+  { key:'immobilier', total:'496 000 €', pct:52 },
+  { key:'av_per', total:'53 300 €', pct:6 },
+  { key:'crypto', total:'15 700 €', pct:2 },
+  { key:'pe_scpi', total:'30 900 €', pct:14 },
+];
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(()=>t.classList.remove('show'), 1700);
+}
+function entAvatarClass(type){ return type==='personnelle'?'ent-type-personnelle':(type==='activite'?'ent-type-activite':'ent-type-immobiliere'); }
+function entBadge(e){ return `<div class="ent-avatar ${entAvatarClass(e.type)}">${e.initial}</div>`; }
+function entBadgeSm(e){ return `<div class="ent-avatar sm ${entAvatarClass(e.type)}">${e.initial}</div>`; }
+
+/* ---------------- entity creation overlay (shared across variants) ---------------- */
+let onEntityCreated = null;
+function openCreatePanel(cb){
+  onEntityCreated = cb;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('ent-libelle').value = '';
+  document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('#ent-type-choice input').forEach(i=>i.checked=false);
+}
+function closeCreatePanel(){ document.getElementById('overlay').classList.remove('open'); }
+document.querySelectorAll('.type-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));
+    opt.classList.add('selected');
+    opt.querySelector('input').checked = true;
+  });
+});
+document.getElementById('ent-create-cancel').addEventListener('click', closeCreatePanel);
+document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeCreatePanel(); });
+document.getElementById('ent-create-confirm').addEventListener('click', ()=>{
+  const libelle = document.getElementById('ent-libelle').value.trim() || 'Nouvelle Entité';
+  closeCreatePanel();
+  toast(`Entité « ${libelle} » créée (prototype)`);
+  if(onEntityCreated) onEntityCreated(libelle);
+});
+
+/* ---------------- reusable renderers ---------------- */
+function domainRailFor(entity, activeDomain, variantKey){
+  return ENTITIES===null ? '' : DOMAIN_KEYS.map(k=>{
+    const has = entity.domains.includes(k);
+    return `<button class="rail-item ${k===activeDomain?'active':''}" data-domain="${k}" data-variant="${variantKey}" ${has?'':'disabled title="Domaine absent de cette Entité"'}>${DOMAIN_LABELS[k]}</button>`;
+  }).join('');
+}
+function ledgerFor(entity, domain){
+  const items = seedFor(entity.key, domain);
+  if(!items.length) return `<div style="padding:24px 20px; font-size:13px; color:var(--muted)">Aucune Ligne pour ce Domaine dans cette Entité.</div>`;
+  return `<div class="env-group-label">${DOMAIN_LABELS[domain]} — ${entity.name}</div>` + items.map(it=>`
+    <div class="ledger-row"><div class="ledger-row-head">
+      <div><div class="name">${it.name}</div><div class="sub">${it.sub}</div></div>
+      <div class="val">${it.val}</div>
+    </div></div>`).join('');
+}
+function consolidatedReportTable(){
+  return `<div class="card"><table class="report-table"><tbody>
+    ${CONSOLIDATED.map(c=>`<tr>
+      <td><span class="swatch" style="background:${DOMAIN_COLORS[c.key]}"></span>${DOMAIN_LABELS[c.key]}</td>
+      <td class="val">${c.total}</td>
+      <td style="width:120px"><div class="bar"><span style="width:${c.pct}%; background:${DOMAIN_COLORS[c.key]}"></span></div></td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+function kpiRow(entity){
+  const label = entity ? entity.name : 'Toutes les Entités';
+  const cards = [
+    `<div class="card kpi-card"><div class="kpi-label">Patrimoine total — ${label}</div><div class="kpi-value mono">${entity? (entity.key==='sarl'?'81 200 €':(entity.key==='sci'?'190 100 €':'429 800 €')) : '701 100 €'}</div><div class="kpi-delta">+2,1 % depuis la dernière mise à jour</div></div>`,
+    `<div class="card kpi-card"><div class="kpi-label">Patrimoine net</div><div class="kpi-value mono">${entity? (entity.key==='sarl'?'81 200 €':(entity.key==='sci'?'104 000 €':'389 800 €')) : '575 000 €'}</div><div class="kpi-delta" style="color:var(--muted)">après capital restant dû</div></div>`,
+  ];
+  if(!entity){
+    /* la carte "Entités" n'a de sens qu'en vue consolidée — inutile une fois sur une Entité précise */
+    cards.push(`<div class="card kpi-card"><div class="kpi-label">Entités</div><div class="kpi-value mono">${ENTITIES.length}</div><div class="kpi-delta" style="color:var(--muted)">perso + 2 sociétés</div></div>`);
+  }
+  return `<div class="kpi-row" style="grid-template-columns:repeat(${cards.length},1fr)">${cards.join('')}</div>`;
+}
+function domainRailForAll(activeDomain, variantKey){
+  return DOMAIN_KEYS.map(k=>`<button class="rail-item ${k===activeDomain?'active':''}" data-domain="${k}" data-variant="${variantKey}">${DOMAIN_LABELS[k]}</button>`).join('');
+}
+function ledgerAllFor(domain){
+  const rows = ENTITIES.filter(e=>e.domains.includes(domain)).flatMap(e=>seedFor(e.key, domain).map(it=>({...it, ent:e})));
+  if(!rows.length) return `<div style="padding:24px 20px; font-size:13px; color:var(--muted)">Aucune Ligne pour ce Domaine, toutes Entités confondues.</div>`;
+  return rows.map(r=>`
+    <div class="ledger-row"><div class="ledger-row-head-all">
+      <div><div class="name">${r.name}</div><div class="sub">${r.sub}</div></div>
+      <div class="ent-cell">${entBadgeSm(r.ent)}<span>${r.ent.name}</span></div>
+      <div class="val">${r.val}</div>
+    </div></div>`).join('');
+}
+
+/* ================================================================== */
+/* VARIANT A — onglets d'Entité au-dessus du rail Domaines             */
+/* ================================================================== */
+const StateA = { entity:'perso', domain:'bourse', screen:'dashboard' };
+function entityTabs(activeKey, allowAll){
+  return `<div class="entity-tabs">
+    ${allowAll? `<button class="entity-tab ${activeKey==='all'?'active':''}" data-ent="all">Toutes les Entités</button>`:''}
+    ${ENTITIES.map(e=>`<button class="entity-tab ${activeKey===e.key?'active':''}" data-ent="${e.key}">${entBadge(e)}${e.name}</button>`).join('')}
+    <button class="entity-tab add" data-ent="__new">+ Nouvelle Entité</button>
+  </div>`;
+}
+function renderA(){
+  if(StateA.screen==='reporting'){
+    const showAll = StateA.entity==='all';
+    return `
+      ${entityTabs(StateA.entity, true)}
+      ${kpiRow(showAll?null:ENTITIES.find(e=>e.key===StateA.entity))}
+      <div class="dash-toolbar"><h2>Répartition par Domaine ${showAll?'(toutes Entités confondues)':''}</h2></div>
+      ${consolidatedReportTable()}
+    `;
+  }
+  if(StateA.entity==='all'){
+    const dom = StateA.domain;
+    return `
+      ${entityTabs('all', true)}
+      <div class="dash-shell">
+        <nav class="domain-rail">${domainRailForAll(dom, 'A')}</nav>
+        <div class="dash-main">
+          <div class="dash-toolbar">
+            <h2>${DOMAIN_LABELS[dom]} — Toutes les Entités</h2>
+            <span class="muted-hint">Choisissez une Entité pour ajouter une Ligne</span>
+          </div>
+          <div class="card">${ledgerAllFor(dom)}</div>
+        </div>
+      </div>
+    `;
+  }
+  const ent = ENTITIES.find(e=>e.key===StateA.entity) || ENTITIES[0];
+  const dom = ent.domains.includes(StateA.domain) ? StateA.domain : ent.domains[0];
+  return `
+    ${entityTabs(StateA.entity, true)}
+    <div class="dash-shell">
+      <nav class="domain-rail">${domainRailFor(ent, dom, 'A')}</nav>
+      <div class="dash-main">
+        <div class="dash-toolbar"><h2>${DOMAIN_LABELS[dom]} — ${ent.name}</h2><button class="btn primary sm">+ Ajouter</button></div>
+        <div class="card">${ledgerFor(ent, dom)}</div>
+      </div>
+    </div>
+  `;
+}
+function wireA(root){
+  root.querySelectorAll('.entity-tab').forEach(b=>b.addEventListener('click', ()=>{
+    if(b.dataset.ent==='__new'){ openCreatePanel(()=>{}); return; }
+    StateA.entity=b.dataset.ent; StateA.domain='bourse'; paint();
+  }));
+  root.querySelectorAll('[data-variant="A"]').forEach(b=>b.addEventListener('click', ()=>{ if(!b.disabled){ StateA.domain=b.dataset.domain; paint(); } }));
+}
+
+/* ================================================================== */
+/* VARIANT B — sélecteur en dropdown dans le header (workspace switcher) */
+/* ================================================================== */
+const StateB = { entity:'perso', domain:'bourse', screen:'dashboard', menuOpen:false };
+function workspaceSwitch(activeKey, allowAll){
+  const active = activeKey==='all' ? null : ENTITIES.find(e=>e.key===activeKey);
+  return `
+    <div class="workspace-switch">
+      <button class="workspace-btn" id="b-ws-btn">
+        ${active? entBadge(active) : `<div class="ent-avatar" style="background:var(--surface-2); color:var(--muted)">∑</div>`}
+        <div class="ws-label"><div class="ws-name">${active? active.name : 'Toutes les Entités'}</div><div class="ws-sub">${active? active.typeLabel : 'Vue consolidée'}</div></div>
+        <span class="chev">▾</span>
+      </button>
+      <div class="ws-menu ${StateB.menuOpen?'open':''}" id="b-ws-menu">
+        ${allowAll? `<div class="ws-item ${activeKey==='all'?'active':''}" data-ent="all"><div class="ent-avatar" style="background:var(--surface-2); color:var(--muted)">∑</div><div><div class="ws-name">Toutes les Entités</div><div class="ws-sub">Vue consolidée</div></div></div>`:''}
+        ${ENTITIES.map(e=>`<div class="ws-item ${activeKey===e.key?'active':''}" data-ent="${e.key}">${entBadge(e)}<div><div class="ws-name">${e.name}</div><div class="ws-sub">${e.typeLabel}</div></div></div>`).join('')}
+        <div class="ws-item add" data-ent="__new">+ Nouvelle Entité</div>
+      </div>
+    </div>`;
+}
+function renderB(){
+  if(StateB.screen==='reporting'){
+    const showAll = StateB.entity==='all';
+    return `
+      ${workspaceSwitch(StateB.entity, true)}
+      ${kpiRow(showAll?null:ENTITIES.find(e=>e.key===StateB.entity))}
+      <div class="dash-toolbar"><h2>Répartition par Domaine ${showAll?'(toutes Entités confondues)':''}</h2></div>
+      ${consolidatedReportTable()}
+    `;
+  }
+  const ent = ENTITIES.find(e=>e.key===StateB.entity) || ENTITIES[0];
+  const dom = ent.domains.includes(StateB.domain) ? StateB.domain : ent.domains[0];
+  return `
+    ${workspaceSwitch(StateB.entity, false)}
+    <div class="dash-shell">
+      <nav class="domain-rail">${domainRailFor(ent, dom, 'B')}</nav>
+      <div class="dash-main">
+        <div class="dash-toolbar"><h2>${DOMAIN_LABELS[dom]}</h2><button class="btn primary sm">+ Ajouter</button></div>
+        <div class="card">${ledgerFor(ent, dom)}</div>
+      </div>
+    </div>
+  `;
+}
+function wireB(root){
+  const btn = root.querySelector('#b-ws-btn');
+  if(btn) btn.addEventListener('click', (e)=>{ e.stopPropagation(); StateB.menuOpen=!StateB.menuOpen; paint(); });
+  root.querySelectorAll('.ws-item').forEach(b=>b.addEventListener('click', ()=>{
+    if(b.dataset.ent==='__new'){ StateB.menuOpen=false; paint(); openCreatePanel(()=>{}); return; }
+    StateB.entity=b.dataset.ent; StateB.domain='bourse'; StateB.menuOpen=false; paint();
+  }));
+  root.querySelectorAll('[data-variant="B"]').forEach(b=>b.addEventListener('click', ()=>{ if(!b.disabled){ StateB.domain=b.dataset.domain; paint(); } }));
+}
+document.addEventListener('click', ()=>{ if(StateB.menuOpen){ StateB.menuOpen=false; if(VARIANTS[current].key==='B') paint(); } });
+
+/* ================================================================== */
+/* VARIANT C — rail imbriqué Entité > Domaine, tout visible sans switcher */
+/* ================================================================== */
+const StateC = { active:{ kind:'domain', entity:'perso', domain:'bourse' }, collapsed:{}, screen:'dashboard' };
+function nestedRail(){
+  return `<nav class="nested-rail">
+    <button class="nested-consolidated ${StateC.active.kind==='consolidated'?'active':''}" data-kind="consolidated">∑ Vue consolidée</button>
+    ${ENTITIES.map(e=>{
+      const isCollapsed = !!StateC.collapsed[e.key];
+      return `<div class="nested-group ${isCollapsed?'collapsed':''}">
+        <div class="nested-group-head" data-toggle="${e.key}"><span class="chev">▾</span>${entBadge(e)}<span>${e.name}</span></div>
+        <div class="nested-items">
+          ${e.domains.map(d=>`<button class="nested-item ${StateC.active.kind==='domain'&&StateC.active.entity===e.key&&StateC.active.domain===d?'active':''}" data-kind="domain" data-entity="${e.key}" data-domain="${d}">${DOMAIN_LABELS[d]}</button>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    <button class="nested-add" data-kind="__new">+ Nouvelle Entité</button>
+  </nav>`;
+}
+function renderC(){
+  const rail = nestedRail();
+  let content;
+  if(StateC.active.kind==='consolidated'){
+    content = `${kpiRow(null)}<div class="dash-toolbar"><h2>Répartition par Domaine (toutes Entités confondues)</h2></div>${consolidatedReportTable()}`;
+  } else {
+    const ent = ENTITIES.find(e=>e.key===StateC.active.entity);
+    const dom = StateC.active.domain;
+    content = `<div class="dash-toolbar"><h2>${DOMAIN_LABELS[dom]} — ${ent.name}</h2><button class="btn primary sm">+ Ajouter</button></div><div class="card">${ledgerFor(ent, dom)}</div>`;
+  }
+  return `<div class="dash-shell">${rail}<div class="dash-main">${content}</div></div>`;
+}
+function wireC(root){
+  root.querySelectorAll('[data-toggle]').forEach(el=>el.addEventListener('click', ()=>{
+    const k = el.dataset.toggle; StateC.collapsed[k] = !StateC.collapsed[k]; paint();
+  }));
+  root.querySelectorAll('.nested-item').forEach(el=>el.addEventListener('click', ()=>{
+    StateC.active = { kind:'domain', entity:el.dataset.entity, domain:el.dataset.domain }; paint();
+  }));
+  const cons = root.querySelector('.nested-consolidated');
+  if(cons) cons.addEventListener('click', ()=>{ StateC.active = { kind:'consolidated' }; paint(); });
+  const add = root.querySelector('.nested-add');
+  if(add) add.addEventListener('click', ()=>openCreatePanel(()=>{}));
+}
+
+/* ---------------- screen toggle (shared) ---------------- */
+function screenToggle(state){
+  return `<div class="screen-toggle">
+    <button class="active-screen ${state.screen==='dashboard'?'active':''}" data-screen="dashboard">Dashboard (saisie)</button>
+    <button class="active-screen ${state.screen==='reporting'?'active':''}" data-screen="reporting">Reporting</button>
+  </div>`;
+}
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:"Onglets d'Entité au-dessus du rail", hint:'les Entités sont un niveau de navigation à part entière, comme les onglets Domaines existants', state:StateA, render:renderA, wire:wireA },
+  { key:'B', name:'Sélecteur en dropdown dans le header', hint:'switcher compact façon "espace de travail", le rail Domaines ne bouge pas', state:StateB, render:renderB, wire:wireB },
+  { key:'C', name:'Rail imbriqué Entité > Domaine', hint:'toutes les Entités et leurs Domaines visibles en permanence, pas de bascule', state:StateC, render:renderC, wire:wireC },
+];
+let current = 0;
+
+function paint(){
+  const v = VARIANTS[current];
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="eyebrow">Navigation multi-Entités — variante ${v.key}</div>
+      <h1>${v.name}</h1>
+      <p class="hint">${v.hint}</p>
+      ${screenToggle(v.state)}
+    </div>
+    <main>${v.render()}</main>
+  `;
+  v.wire(app);
+  app.querySelectorAll('[data-screen]').forEach(b=>b.addEventListener('click', ()=>{ v.state.screen = b.dataset.screen; paint(); }));
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.name}`;
+}
+function go(delta){ current = (current + delta + VARIANTS.length) % VARIANTS.length; paint(); }
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+
+paint();
+</script>

@@ -1,0 +1,711 @@
+<title>Saisie du patrimoine</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#EDEBE2;
+    --surface:#FFFFFF;
+    --surface-2:#F7F5EC;
+    --ink:#20261F;
+    --muted:#6E6858;
+    --line:#CFC6AC;
+    --line-strong:#B8AD8C;
+    --accent:#96601F;
+    --accent-ink:#FFF8ED;
+    --good:#3F6C4A;
+    --focus:#96601F;
+    --shadow: 0 1px 2px rgba(32,38,31,0.06), 0 8px 24px -12px rgba(32,38,31,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#171A15;
+      --surface:#20241D;
+      --surface-2:#262B21;
+      --ink:#EDE8DA;
+      --muted:#A79E88;
+      --line:#3A3E31;
+      --line-strong:#4B5040;
+      --accent:#D0964A;
+      --accent-ink:#20150A;
+      --good:#7FBB8B;
+      --focus:#D0964A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#171A15;
+    --surface:#20241D;
+    --surface-2:#262B21;
+    --ink:#EDE8DA;
+    --muted:#A79E88;
+    --line:#3A3E31;
+    --line-strong:#4B5040;
+    --accent:#D0964A;
+    --accent-ink:#20150A;
+    --good:#7FBB8B;
+    --focus:#D0964A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:'Public Sans', -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces', Georgia, serif;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .scaffold{ display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ---------- Top banner ---------- */
+  .proto-banner{
+    background:var(--ink); color:var(--ground);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:7px 20px; display:flex; justify-content:space-between; gap:12px;
+  }
+  .proto-banner b{ color:var(--accent-ink); background:var(--accent); padding:1px 6px; border-radius:3px; margin-right:8px; }
+
+  /* ---------- Header ---------- */
+  .app-header{
+    padding:28px 32px 0;
+    max-width:1040px; margin:0 auto; width:100%;
+  }
+  .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .app-header h1{ font-size:28px; font-weight:500; margin:4px 0 20px; }
+
+  /* ---------- Domain tabs ---------- */
+  .domain-tabs{
+    display:flex; gap:2px; border-bottom:1px solid var(--line); overflow-x:auto;
+  }
+  .domain-tab{
+    font-family:'Public Sans'; font-size:13.5px; font-weight:600; color:var(--muted);
+    background:none; border:none; padding:10px 14px; cursor:pointer; white-space:nowrap;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .domain-tab:hover{ color:var(--ink); }
+  .domain-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+  .domain-tab:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  /* ---------- Rail (variant C) ---------- */
+  .domain-rail{ display:flex; flex-direction:column; gap:2px; width:180px; flex:0 0 auto; }
+  .rail-item{
+    font-family:'Public Sans'; font-size:13.5px; font-weight:600; color:var(--muted);
+    background:none; border:none; text-align:left; padding:10px 14px; cursor:pointer;
+    border-left:2px solid transparent; border-radius:0 6px 6px 0;
+  }
+  .rail-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .rail-item.active{ color:var(--accent); border-left-color:var(--accent); background:var(--surface-2); }
+
+  main{ flex:1; max-width:1040px; margin:0 auto; width:100%; padding:24px 32px 140px; }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+
+  /* ---------- Ledger field row ---------- */
+  .field-row{
+    display:grid; grid-template-columns:230px 1fr; gap:16px; align-items:start;
+    padding:13px 22px; border-bottom:1px solid var(--line);
+  }
+  .field-row:last-child{ border-bottom:none; }
+  .field-row label{ font-size:13.5px; color:var(--muted); padding-top:8px; }
+  .field-row .field-note{ display:block; font-size:11px; color:var(--muted); margin-top:2px; font-style:italic; }
+  .field-input{
+    width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px;
+  }
+  select.field-input, input[type=text].field-input, textarea.field-input{ font-family:'Public Sans'; }
+  .field-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent); }
+  .field-suffix-wrap{ position:relative; }
+  .field-suffix{ position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); pointer-events:none; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; padding-top:8px; }
+  .checkbox-row input{ width:16px; height:16px; accent-color:var(--accent); }
+
+  /* ---------- Section header inside card ---------- */
+  .section-head{
+    padding:16px 22px 12px; display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    border-bottom:1px solid var(--line-strong);
+  }
+  .section-head h2{ font-size:17px; font-weight:500; margin:0; }
+  .section-head .tag{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-family:'IBM Plex Mono'; }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:'Public Sans'; font-size:13.5px; font-weight:600; border-radius:7px; padding:9px 16px;
+    border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); cursor:pointer;
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.ghost{ border-color:transparent; background:none; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .btn-row{ display:flex; gap:10px; padding:16px 22px; }
+
+  select.field-input{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236E6858'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:26px; }
+
+  /* ================= VARIANT A — single scrolling form ================= */
+  .segmented{ display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+  .segmented button{
+    font-family:'Public Sans'; font-size:12.5px; font-weight:600; padding:7px 14px; border:none;
+    background:var(--surface); color:var(--muted); cursor:pointer;
+  }
+  .segmented button + button{ border-left:1px solid var(--line-strong); }
+  .segmented button.active{ background:var(--accent); color:var(--accent-ink); }
+
+  .enveloppe-picker{ display:flex; align-items:center; gap:10px; padding:16px 22px; background:var(--surface-2); border-bottom:1px solid var(--line); }
+  .enveloppe-picker label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .enveloppe-picker select{ max-width:280px; }
+
+  /* ================= VARIANT B — wizard ================= */
+  .stepper{ display:flex; align-items:center; gap:0; margin-bottom:22px; }
+  .step{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12.5px; font-weight:600; }
+  .step .dot{
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line-strong); display:flex; align-items:center;
+    justify-content:center; font-family:'IBM Plex Mono'; font-size:11px; flex:0 0 auto; background:var(--surface);
+  }
+  .step.done .dot{ background:var(--good); border-color:var(--good); color:#fff; }
+  .step.current .dot{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .step.current{ color:var(--ink); }
+  .step.skip{ opacity:.45; text-decoration:line-through; }
+  .step-connector{ width:32px; height:1px; background:var(--line-strong); margin:0 6px; }
+  .wizard-card{ padding:26px 26px 8px; }
+  .wizard-title{ font-size:19px; font-weight:500; margin:0 0 4px; }
+  .wizard-sub{ font-size:13px; color:var(--muted); margin:0 0 22px; }
+  .choice-row{ display:flex; gap:14px; margin-bottom:8px; }
+  .choice-card{
+    flex:1; border:1.5px solid var(--line-strong); border-radius:10px; padding:20px; cursor:pointer; background:var(--surface);
+    text-align:left;
+  }
+  .choice-card:hover{ border-color:var(--accent); }
+  .choice-card.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .choice-card .choice-title{ font-family:'Fraunces'; font-size:17px; margin:0 0 4px; }
+  .choice-card .choice-desc{ font-size:12.5px; color:var(--muted); margin:0; }
+  .enveloppe-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
+  .enveloppe-item{
+    display:flex; justify-content:space-between; align-items:center; border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; cursor:pointer; background:var(--surface);
+  }
+  .enveloppe-item:hover{ border-color:var(--accent); }
+  .enveloppe-item.selected{ border-color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .enveloppe-item .env-name{ font-weight:600; font-size:14px; }
+  .enveloppe-item .env-meta{ font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+
+  /* ================= VARIANT C — dashboard ================= */
+  .dash-shell{ display:flex; gap:24px; align-items:flex-start; }
+  .dash-main{ flex:1; min-width:0; }
+  .dash-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .dash-toolbar h2{ font-size:19px; font-weight:500; margin:0; }
+  .ledger-row{ border-bottom:1px solid var(--line); }
+  .ledger-row:last-child{ border-bottom:none; }
+  .ledger-row-head{
+    display:grid; grid-template-columns:1fr auto auto 22px; gap:14px; align-items:center;
+    padding:13px 20px; cursor:pointer;
+  }
+  .ledger-row-head:hover{ background:var(--surface-2); }
+  .ledger-row-head .name{ font-weight:600; font-size:14px; }
+  .ledger-row-head .sub{ font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono'; }
+  .ledger-row-head .val{ font-family:'IBM Plex Mono'; font-size:14px; text-align:right; }
+  .ledger-row-head .chev{ transition:transform .15s; color:var(--muted); }
+  .ledger-row.open .chev{ transform:rotate(90deg); }
+  .ledger-row-body{ display:none; padding:2px 0 18px; }
+  .ledger-row.open .ledger-row-body{ display:block; }
+  .disclosure{ margin:14px 22px 0; }
+  .disclosure summary{
+    cursor:pointer; font-size:12.5px; font-weight:600; color:var(--accent); list-style:none;
+    display:flex; align-items:center; gap:6px;
+  }
+  .disclosure summary::-webkit-details-marker{ display:none; }
+  .disclosure summary:before{ content:'+'; font-family:'IBM Plex Mono'; }
+  .disclosure[open] summary:before{ content:'–'; }
+  .disclosure-body{ border:1px dashed var(--line-strong); border-radius:8px; margin-top:10px; overflow:hidden; }
+  .env-group-label{
+    padding:14px 20px 4px; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase;
+    letter-spacing:.07em; color:var(--muted);
+  }
+
+  /* ---------- Switcher ---------- */
+  .switcher{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:2px; background:var(--ink); color:var(--ground);
+    border-radius:999px; padding:5px; box-shadow:0 10px 30px -8px rgba(0,0,0,0.4); z-index:50;
+  }
+  .switcher button{
+    background:none; border:none; color:var(--ground); width:30px; height:30px; border-radius:50%;
+    cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
+  }
+  .switcher button:hover{ background:rgba(255,255,255,0.12); }
+  .switcher .label{
+    font-family:'IBM Plex Mono'; font-size:12px; padding:0 14px; min-width:200px; text-align:center;
+  }
+  .switcher .label b{ color:var(--accent); }
+
+  .toast{
+    position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(8px); opacity:0;
+    background:var(--good); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px;
+    transition:opacity .18s, transform .18s; pointer-events:none; z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  [hidden]{ display:none !important; }
+</style>
+
+<div class="scaffold">
+  <div class="proto-banner">
+    <span><b>PROTOTYPE</b>UX des formulaires de saisie par domaine — ticket wayfinder 06</span>
+    <span id="variant-hint">Variante A — Formulaire unique</span>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <button id="prev" aria-label="Variante précédente">‹</button>
+  <div class="label" id="switch-label"></div>
+  <button id="next" aria-label="Variante suivante">›</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Domain config (shared real content across all 3 variants) ---------------- */
+const DOMAINS = {
+  liquidites: { label:'Liquidités', hasEnveloppe:false, ligneLabel:'Compte',
+    ligneFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'Livret A — Boursorama'},
+      {k:'typeCompte',l:'Type de compte',t:'select',opts:['Livret A','LDDS','LEP','Compte courant','Autre']},
+      {k:'plafond',l:'Plafond du livret',t:'number',sfx:'€',ph:'22 950'},
+      {k:'taux',l:'Taux de rémunération actuel',t:'number',sfx:'%',ph:'3,00'},
+      {k:'valeur',l:'Valeur actuelle',t:'number',sfx:'€',ph:'12 400'},
+      {k:'note',l:'Note libre',t:'textarea'},
+    ],
+    mouvementFields:[
+      {k:'type',l:'Type',t:'select',opts:['Versement','Retrait']},
+      {k:'montant',l:'Montant',t:'number',sfx:'€'},
+      {k:'date',l:'Date',t:'date'},
+    ],
+    seed:[{name:'Livret A — Boursorama',sub:'Livret A',val:'12 400 €'},{name:'LDDS — BNP',sub:'LDDS',val:'6 000 €'}],
+  },
+  bourse: { label:'Bourse (PEA / CTO)', hasEnveloppe:true, enveloppeLabel:'Enveloppe', ligneLabel:'Titre',
+    enveloppeFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'PEA — Boursorama'},
+      {k:'type',l:'Type',t:'select',opts:['PEA','PEA-PME','CTO']},
+      {k:'dateOuverture',l:"Date d'ouverture",t:'date'},
+      {k:'statut',l:'Statut',t:'select',opts:['Actif','Clôturé']},
+    ],
+    ligneFields:[
+      {k:'nom',l:'Nom / ISIN',t:'text',ph:'MSCI World — IE00B4X9L533'},
+      {k:'quantite',l:'Quantité',t:'number'},
+      {k:'valeur',l:'Valeur actuelle',t:'number',sfx:'€'},
+      {k:'pru',l:'Prix de revient moyen pondéré',t:'number',sfx:'€',note:'CTO uniquement'},
+    ],
+    mouvementFields:[
+      {k:'type',l:'Type',t:'select',opts:['Achat','Vente','Versement (enveloppe)','Retrait (enveloppe)']},
+      {k:'quantite',l:'Quantité',t:'number'},
+      {k:'prixUnitaire',l:'Prix unitaire',t:'number',sfx:'€'},
+      {k:'date',l:'Date',t:'date'},
+    ],
+    enveloppes:[
+      {name:'PEA — Boursorama', meta:'PEA · ouvert 03/2019 · actif',
+       lignes:[{name:'MSCI World',sub:'IE00B4X9L533',val:'38 200 €'},{name:'S&P 500',sub:'IE00B5BMR087',val:'14 900 €'}]},
+      {name:'CTO — Degiro', meta:'CTO · ouvert 01/2021 · actif',
+       lignes:[{name:'LVMH',sub:'FR0000121014',val:'5 100 €'}]},
+    ],
+  },
+  immobilier: { label:'Immobilier', hasEnveloppe:false, ligneLabel:'Bien',
+    ligneFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'Appartement Lyon 7e'},
+      {k:'prixAcquisition',l:"Prix d'acquisition total",t:'number',sfx:'€'},
+      {k:'dateAcquisition',l:"Date d'acquisition",t:'date'},
+      {k:'residencePrincipale',l:'Résidence principale',t:'checkbox'},
+      {k:'regimeLocation',l:'Régime de location',t:'select',opts:['Non loué','Nu','Meublé (LMNP)','Meublé (LMP)']},
+    ],
+    valorisationFields:[
+      {k:'valeurEstimee',l:'Valeur estimée',t:'number',sfx:'€'},
+      {k:'capitalRestantDu',l:'Capital restant dû',t:'number',sfx:'€'},
+      {k:'loyer',l:'Loyer',t:'number',sfx:'€/mois'},
+      {k:'charges',l:'Charges',t:'number',sfx:'€/mois'},
+      {k:'taxeFonciere',l:'Taxe foncière',t:'number',sfx:'€/an'},
+      {k:'assurance',l:'Assurance',t:'number',sfx:'€/an'},
+      {k:'fraisGestion',l:'Frais de gestion',t:'number',sfx:'€/mois'},
+      {k:'mensualite',l:'Mensualité',t:'number',sfx:'€/mois'},
+    ],
+    seed:[{name:'Appartement Lyon 7e',sub:'Résidence principale',val:'310 000 €'},{name:'Studio Rennes (locatif)',sub:'Meublé (LMNP)',val:'98 000 €'}],
+  },
+  av_per: { label:'Assurance-vie / PER', hasEnveloppe:true, enveloppeLabel:'Contrat', ligneLabel:'Support',
+    enveloppeFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'Assurance-vie — Linxea Spirit 2'},
+      {k:'type',l:'Type',t:'select',opts:['Assurance-vie','PER']},
+      {k:'dateOuverture',l:"Date d'ouverture",t:'date'},
+      {k:'statut',l:'Statut',t:'select',opts:['Actif','Clôturé']},
+    ],
+    ligneFields:[
+      {k:'nom',l:'Nom du support',t:'text',ph:'Fonds euro — Suravenir Rendement'},
+      {k:'typeSupport',l:'Type',t:'select',opts:['Fonds euro','Unité de compte']},
+      {k:'valeur',l:'Valeur actuelle',t:'number',sfx:'€'},
+    ],
+    mouvementFields:[
+      {k:'type',l:'Type',t:'select',opts:['Versement','Rachat']},
+      {k:'montant',l:'Montant',t:'number',sfx:'€'},
+      {k:'deductible',l:'Versement déductible (PER)',t:'checkbox'},
+      {k:'date',l:'Date',t:'date'},
+    ],
+    enveloppes:[
+      {name:'Linxea Spirit 2', meta:'Assurance-vie · ouvert 06/2016 · actif',
+       lignes:[{name:'Fonds euro — Suravenir',sub:'Fonds euro',val:'41 000 €'},{name:'UC Monde',sub:'Unité de compte',val:'12 300 €'}]},
+    ],
+  },
+  crypto: { label:'Crypto', hasEnveloppe:true, enveloppeLabel:'Portefeuille', ligneLabel:'Actif',
+    enveloppeFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'Binance'},
+      {k:'plateformeEtrangere',l:'Plateforme étrangère',t:'checkbox'},
+      {k:'prixAcquisitionCumule',l:"Prix d'acquisition cumulé",t:'number',sfx:'€'},
+    ],
+    ligneFields:[
+      {k:'symbole',l:'Symbole',t:'text',ph:'BTC'},
+      {k:'quantite',l:'Quantité',t:'number'},
+      {k:'valeur',l:'Valeur actuelle',t:'number',sfx:'€'},
+    ],
+    mouvementFields:[
+      {k:'type',l:'Type',t:'select',opts:['Achat','Vente']},
+      {k:'quantite',l:'Quantité',t:'number'},
+      {k:'prixUnitaire',l:'Prix unitaire',t:'number',sfx:'€'},
+      {k:'date',l:'Date',t:'date'},
+    ],
+    enveloppes:[
+      {name:'Binance', meta:'Plateforme étrangère · acquis 15 200 €',
+       lignes:[{name:'BTC',sub:'0,21',val:'11 800 €'},{name:'ETH',sub:'1,4',val:'3 900 €'}]},
+    ],
+  },
+  pe_scpi: { label:'Private equity / SCPI', hasEnveloppe:true, enveloppeLabel:'Fonds', ligneLabel:'Part souscrite',
+    enveloppeFields:[
+      {k:'libelle',l:'Libellé',t:'text',ph:'SCPI Corum Origin'},
+      {k:'typeDispositif',l:'Type de dispositif',t:'select',opts:['FCPR','FIP','FCPI','SCPI']},
+      {k:'dureeBlocage',l:'Durée de blocage',t:'text',ph:'8 ans'},
+    ],
+    ligneFields:[
+      {k:'nombreParts',l:'Nombre de parts',t:'number'},
+      {k:'valeurEstimee',l:'Valeur actuelle estimée',t:'number',sfx:'€'},
+    ],
+    mouvementFields:[
+      {k:'type',l:'Type',t:'select',opts:['Souscription','Rachat']},
+      {k:'montant',l:'Montant',t:'number',sfx:'€'},
+      {k:'nombreParts',l:'Nombre de parts',t:'number'},
+      {k:'date',l:'Date',t:'date'},
+    ],
+    enveloppes:[
+      {name:'SCPI Corum Origin', meta:'SCPI · blocage 8 ans',
+       lignes:[{name:'42 parts',sub:'souscrites 2022',val:'18 900 €'}]},
+    ],
+  },
+};
+const DOMAIN_KEYS = Object.keys(DOMAINS);
+
+/* ---------------- shared field renderer ---------------- */
+function fieldRow(f, idPrefix){
+  const id = idPrefix + '-' + f.k;
+  let input;
+  if(f.t === 'select'){
+    input = `<select class="field-input" id="${id}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+  } else if(f.t === 'textarea'){
+    input = `<textarea class="field-input" id="${id}" rows="2" placeholder="${f.ph||''}"></textarea>`;
+  } else if(f.t === 'checkbox'){
+    input = `<div class="checkbox-row"><input type="checkbox" id="${id}"></div>`;
+  } else if(f.sfx){
+    input = `<div class="field-suffix-wrap"><input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}" style="padding-right:34px"><span class="field-suffix">${f.sfx}</span></div>`;
+  } else {
+    input = `<input class="field-input" id="${id}" type="${f.t}" placeholder="${f.ph||''}">`;
+  }
+  return `<div class="field-row">
+    <label for="${id}">${f.l}${f.note?`<span class="field-note">${f.note}</span>`:''}</label>
+    <div>${input}</div>
+  </div>`;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+/* ================================================================== */
+/* VARIANT A — one continuous ledger form, Mouvement/Valorisation toggle */
+/* ================================================================== */
+const StateA = { domain:'bourse', mode:'valorisation', enveloppe:0 };
+
+function renderA(){
+  const d = DOMAINS[StateA.domain];
+  const showToggle = !!d.mouvementFields;
+  const fields = (StateA.mode === 'mouvement' && d.mouvementFields)
+    ? d.mouvementFields
+    : (d.valorisationFields || d.ligneFields);
+
+  return `
+    ${domainTabs(StateA.domain, 'A')}
+    <div class="card" style="margin-top:16px">
+      ${d.hasEnveloppe ? `
+        <div class="enveloppe-picker">
+          <label>${d.enveloppeLabel}</label>
+          <select class="field-input" id="a-env-select">
+            ${d.enveloppes.map((e,i)=>`<option value="${i}" ${i===StateA.enveloppe?'selected':''}>${e.name}</option>`).join('')}
+            <option value="new">+ Nouvelle ${d.enveloppeLabel.toLowerCase()}…</option>
+          </select>
+        </div>` : ''}
+      <div class="section-head">
+        <h2>${showToggle ? 'Ligne + mise à jour' : d.ligneLabel}</h2>
+        ${showToggle ? `
+          <div class="segmented" id="a-toggle">
+            <button data-mode="valorisation" class="${StateA.mode==='valorisation'?'active':''}">Valorisation</button>
+            <button data-mode="mouvement" class="${StateA.mode==='mouvement'?'active':''}">Mouvement</button>
+          </div>` : `<span class="tag">Valorisation périodique</span>`}
+      </div>
+      ${!d.mouvementFields ? d.ligneFields.map(f=>fieldRow(f,'a-l')).join('') : ''}
+      ${(StateA.mode==='valorisation' && d.mouvementFields) ? d.ligneFields.map(f=>fieldRow(f,'a-l')).join('') : ''}
+      ${(StateA.mode==='mouvement' && d.mouvementFields) ? fields.map(f=>fieldRow(f,'a-m')).join('') : ''}
+      ${(d.valorisationFields) ? fields.map(f=>fieldRow(f,'a-v')).join('') : ''}
+      <div class="btn-row">
+        <button class="btn primary" id="a-save">Enregistrer</button>
+        <button class="btn ghost">Annuler</button>
+      </div>
+    </div>
+  `;
+}
+
+function domainTabs(active, variant){
+  return `<div class="domain-tabs">
+    ${DOMAIN_KEYS.map(k=>`<button class="domain-tab ${k===active?'active':''}" data-domain="${k}" data-variant="${variant}">${DOMAINS[k].label}</button>`).join('')}
+  </div>`;
+}
+
+function wireA(root){
+  root.querySelectorAll('[data-variant="A"]').forEach(b=>b.addEventListener('click', ()=>{
+    StateA.domain = b.dataset.domain; StateA.mode='valorisation'; StateA.enveloppe=0; paint();
+  }));
+  const toggle = root.querySelector('#a-toggle');
+  if(toggle) toggle.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{ StateA.mode=b.dataset.mode; paint(); }));
+  const env = root.querySelector('#a-env-select');
+  if(env) env.addEventListener('change', ()=>{ if(env.value!=='new'){ StateA.enveloppe=+env.value; } paint(); });
+  const save = root.querySelector('#a-save');
+  if(save) save.addEventListener('click', ()=>toast('Enregistré (prototype)'));
+}
+
+/* ================================================================== */
+/* VARIANT B — guided step-by-step wizard                              */
+/* ================================================================== */
+const StateB = { domain:'bourse', step:1, enveloppe:null, action:null };
+
+function stepperB(d){
+  const steps = [
+    {n:1, label:d.enveloppeLabel||'Enveloppe', skip:!d.hasEnveloppe},
+    {n:2, label:d.ligneLabel},
+    {n:3, label:"Type d’action", skip:!d.mouvementFields},
+    {n:4, label:'Détails'},
+  ];
+  return `<div class="stepper">${steps.map((s,i)=>`
+    ${i>0?'<div class="step-connector"></div>':''}
+    <div class="step ${s.skip?'skip':(s.n===StateB.step?'current':(s.n<StateB.step?'done':''))}">
+      <span class="dot">${s.n<StateB.step && !s.skip ? '✓' : s.n}</span><span>${s.label}</span>
+    </div>`).join('')}</div>`;
+}
+
+function renderB(){
+  const d = DOMAINS[StateB.domain];
+  let step = StateB.step;
+  if(step===1 && !d.hasEnveloppe) step = 2;
+  if(step===3 && !d.mouvementFields) step = 4;
+
+  let body = '';
+  if(step===1){
+    body = `<div class="wizard-title">Choisir ${d.enveloppeLabel.toLowerCase()}</div>
+      <p class="wizard-sub">Sélectionnez ${(d.enveloppeLabel||'').toLowerCase()} existant${d.enveloppeLabel==='Enveloppe'?'e':''} ou créez-en un${d.enveloppeLabel==='Enveloppe'?'e':''} nouveau${d.enveloppeLabel==='Enveloppe'?'lle':''}.</p>
+      <div class="enveloppe-list">
+        ${d.enveloppes.map((e,i)=>`<div class="enveloppe-item ${StateB.enveloppe===i?'selected':''}" data-env="${i}">
+          <div><div class="env-name">${e.name}</div></div><div class="env-meta">${e.meta}</div>
+        </div>`).join('')}
+        <div class="enveloppe-item" data-env="new"><div class="env-name">+ Nouveau ${d.enveloppeLabel.toLowerCase()}</div></div>
+      </div>`;
+  } else if(step===2){
+    body = `<div class="wizard-title">${d.ligneLabel}</div>
+      <p class="wizard-sub">Renseignez les informations de ${d.ligneLabel.toLowerCase()}.</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">
+        ${d.ligneFields.map(f=>fieldRow(f,'b-l')).join('')}
+      </div>`;
+  } else if(step===3){
+    body = `<div class="wizard-title">Que voulez-vous enregistrer ?</div>
+      <p class="wizard-sub">Un mouvement est une opération datée ; une valorisation est une mise à jour de la valeur constatée.</p>
+      <div class="choice-row">
+        <button class="choice-card ${StateB.action==='mouvement'?'selected':''}" data-action="mouvement">
+          <p class="choice-title">Mouvement</p><p class="choice-desc">Achat, vente, versement, retrait…</p>
+        </button>
+        <button class="choice-card ${StateB.action==='valorisation'?'selected':''}" data-action="valorisation">
+          <p class="choice-title">Valorisation</p><p class="choice-desc">Mettre à jour la valeur actuelle constatée.</p>
+        </button>
+      </div>`;
+  } else {
+    const fields = (StateB.action==='mouvement' && d.mouvementFields) ? d.mouvementFields : (d.valorisationFields || d.ligneFields.filter(f=>f.k==='valeur'));
+    body = `<div class="wizard-title">Détails ${StateB.action==='mouvement'?'du mouvement':'de la valorisation'}</div>
+      <p class="wizard-sub">Dernière étape.</p>
+      <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden">
+        ${fields.map(f=>fieldRow(f,'b-d')).join('')}
+      </div>`;
+  }
+
+  const isFirst = step===1 || (step===2 && !d.hasEnveloppe);
+  const isLast = step===4;
+
+  return `
+    ${domainTabs(StateB.domain, 'B')}
+    <div class="card wizard-card" style="margin-top:16px">
+      ${stepperB(d)}
+      ${body}
+      <div class="btn-row" style="padding-left:0;padding-right:0">
+        <button class="btn ghost" id="b-back" ${isFirst?'disabled style="visibility:hidden"':''}>← Retour</button>
+        <button class="btn primary" id="b-next">${isLast?'Enregistrer':'Continuer →'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function wireB(root){
+  root.querySelectorAll('[data-variant="B"]').forEach(b=>b.addEventListener('click', ()=>{
+    StateB.domain=b.dataset.domain; StateB.step=1; StateB.enveloppe=null; StateB.action=null; paint();
+  }));
+  root.querySelectorAll('.enveloppe-item').forEach(el=>el.addEventListener('click', ()=>{
+    StateB.enveloppe = el.dataset.env==='new'?'new':+el.dataset.env; StateB.step=2; paint();
+  }));
+  root.querySelectorAll('.choice-card').forEach(el=>el.addEventListener('click', ()=>{
+    StateB.action = el.dataset.action; StateB.step=4; paint();
+  }));
+  const back = root.querySelector('#b-back');
+  if(back) back.addEventListener('click', ()=>{
+    const d = DOMAINS[StateB.domain];
+    let s = StateB.step-1;
+    if(s===3 && !d.mouvementFields) s=2;
+    if(s===1 && !d.hasEnveloppe) s=1;
+    StateB.step = Math.max(1,s); paint();
+  });
+  const next = root.querySelector('#b-next');
+  if(next) next.addEventListener('click', ()=>{
+    const d = DOMAINS[StateB.domain];
+    if(StateB.step===4){ toast('Enregistré (prototype)'); StateB.step=1; StateB.enveloppe=null; StateB.action=null; paint(); return; }
+    let s = StateB.step+1;
+    if(s===3 && !d.mouvementFields) s=4;
+    StateB.step=s; paint();
+  });
+}
+
+/* ================================================================== */
+/* VARIANT C — dashboard with inline smart-edit rows                   */
+/* ================================================================== */
+const StateC = { domain:'bourse', open:null };
+
+function ledgerRow(item, path){
+  const isOpen = StateC.open===path;
+  const d = DOMAINS[StateC.domain];
+  return `<div class="ledger-row ${isOpen?'open':''}">
+    <div class="ledger-row-head" data-path="${path}">
+      <div><div class="name">${item.name}</div><div class="sub">${item.sub}</div></div>
+      <div class="val">${item.val}</div>
+      <div></div>
+      <div class="chev">›</div>
+    </div>
+    <div class="ledger-row-body">
+      ${(d.valorisationFields||[{k:'valeur',l:'Valeur actuelle',t:'number',sfx:'€'}]).map(f=>fieldRow(f,'c-'+path)).join('')}
+      ${d.mouvementFields ? `
+        <details class="disclosure">
+          <summary>Associer un mouvement (versement, achat…)</summary>
+          <div class="disclosure-body">
+            ${d.mouvementFields.map(f=>fieldRow(f,'c-mv-'+path)).join('')}
+          </div>
+        </details>` : ''}
+      <div class="btn-row">
+        <button class="btn primary" data-save="${path}">Enregistrer la mise à jour</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderC(){
+  const d = DOMAINS[StateC.domain];
+  let list = '';
+  if(d.hasEnveloppe){
+    list = d.enveloppes.map((env,ei)=>`
+      <div class="env-group-label">${env.name} — ${env.meta}</div>
+      ${env.lignes.map((l,li)=>ledgerRow(l, `${ei}.${li}`)).join('')}
+    `).join('');
+  } else {
+    list = d.seed.map((l,li)=>ledgerRow(l, `${li}`)).join('');
+  }
+
+  return `
+    <div class="dash-shell">
+      <nav class="domain-rail">
+        ${DOMAIN_KEYS.map(k=>`<button class="rail-item ${k===StateC.domain?'active':''}" data-domain="${k}" data-variant="C">${DOMAINS[k].label}</button>`).join('')}
+      </nav>
+      <div class="dash-main">
+        <div class="dash-toolbar">
+          <h2>${d.label}</h2>
+          <button class="btn primary" id="c-add">+ Ajouter ${(d.ligneLabel||'').toLowerCase()}</button>
+        </div>
+        <div class="card">${list}</div>
+      </div>
+    </div>
+  `;
+}
+
+function wireC(root){
+  root.querySelectorAll('[data-variant="C"]').forEach(b=>b.addEventListener('click', ()=>{
+    StateC.domain=b.dataset.domain; StateC.open=null; paint();
+  }));
+  root.querySelectorAll('.ledger-row-head').forEach(el=>el.addEventListener('click', ()=>{
+    const p = el.dataset.path;
+    StateC.open = (StateC.open===p) ? null : p;
+    paint();
+  }));
+  const add = root.querySelector('#c-add');
+  if(add) add.addEventListener('click', ()=>toast('Nouvelle ligne ajoutée (prototype)'));
+  root.querySelectorAll('[data-save]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); toast('Mise à jour enregistrée (prototype)'); }));
+}
+
+/* ---------------- switcher plumbing ---------------- */
+const VARIANTS = [
+  { key:'A', name:'Formulaire unique', hint:'toggle Mouvement / Valorisation dans un seul écran', render:renderA, wire:wireA },
+  { key:'B', name:'Assistant pas à pas', hint:"wizard Enveloppe → Ligne → Type d’action → Détails", render:renderB, wire:wireB },
+  { key:'C', name:'Tableau de bord', hint:'liste par domaine, édition en ligne, mouvement en option', render:renderC, wire:wireC },
+];
+let current = 0;
+
+function paint(){
+  const v = VARIANTS[current];
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="eyebrow">Saisie du patrimoine — variante ${v.key}</div>
+      <h1>${v.name}</h1>
+    </div>
+    <main>${v.render()}</main>
+  `;
+  v.wire(app);
+  document.getElementById('switch-label').innerHTML = `<b>${v.key}</b> ${v.name}`;
+  document.getElementById('variant-hint').textContent = `Variante ${v.key} — ${v.hint}`;
+}
+
+function go(delta){
+  current = (current + delta + VARIANTS.length) % VARIANTS.length;
+  paint();
+}
+document.getElementById('prev').addEventListener('click', ()=>go(-1));
+document.getElementById('next').addEventListener('click', ()=>go(1));
+document.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+
+paint();
+</script>
