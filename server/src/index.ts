@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrate } from './db/client.js';
+import { bourseRouter } from './routes/bourse.js';
 import { entitiesRouter } from './routes/entities.js';
 import { liquiditesRouter } from './routes/liquidites.js';
 
@@ -17,6 +18,7 @@ app.use(express.json());
 
 app.use('/api/entities', entitiesRouter);
 app.use('/api/liquidites', liquiditesRouter);
+app.use('/api/bourse', bourseRouter);
 
 // Serve the built web app when present (production / one-click start flow).
 const webDist = join(__dirname, '..', '..', 'web', 'dist');

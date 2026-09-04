@@ -2,7 +2,9 @@
 
 Application web strictement personnelle de gestion de patrimoine. Voir [`PRD.md`](PRD.md) pour la spécification complète.
 
-Cette passe de scaffolding met en place l'ensemble du modèle de données et câble une seule tranche verticale de bout en bout : le domaine **Liquidités** (dashboard multi-Entités + historisation des Valorisations), servi par une vraie base SQLite via une API Express — rien n'est mocké.
+L'ensemble du modèle de données est en place. Deux tranches verticales sont câblées de bout en bout, servies par une vraie base SQLite via une API Express — rien n'est mocké :
+- **Liquidités** (dashboard multi-Entités + historisation des Valorisations) ;
+- **Bourse** (PEA/PEA-PME/CTO, titres avec PRU réservé au CTO, Ligne « compte espèces » auto-gérée par Enveloppe).
 
 ## Prérequis
 
@@ -65,7 +67,7 @@ server/                  API Express + SQLite (better-sqlite3)
 
 web/                      Interface React (Vite)
   src/App.tsx              écran principal (onglets d'Entité + rail de Domaines)
-  src/components/          EntityTabs, DomainRail, LiquiditesDashboard, LigneJournal, panneaux de création
+  src/components/          EntityTabs, DomainRail, {Liquidites,Bourse}Dashboard, journaux de Valorisations, panneaux de création
   src/api.ts               client HTTP vers l'API
 
 scripts/start.mjs          logique du démarrage en un clic (build + serveur + ouverture navigateur)
@@ -74,7 +76,7 @@ start.sh                   point d'entrée shell pour scripts/start.mjs
 
 ## Périmètre de cette passe
 
-Seul le domaine **Liquidités** est câblé à l'UI (dashboard, création de Ligne, historique de Valorisations avec correction/suppression, association d'un Mouvement). Les onglets d'Entité et la navigation multi-Entités sont fonctionnels. Les cinq autres domaines (Bourse, Immobilier, Assurance-vie/PER, Crypto, Private equity/SCPI), le Reporting, le Profil, les Objectifs, le moteur de conseil et le chat sont hors périmètre — leurs tables existent déjà en base mais aucun écran ne les expose encore.
+Les domaines **Liquidités** et **Bourse** sont câblés à l'UI (dashboard, création d'Enveloppe/Ligne, historique de Valorisations avec correction/suppression, association d'un Mouvement). Pour Bourse : création d'une Enveloppe (PEA/PEA-PME/CTO) avec son premier titre, ajout de titres supplémentaires dans une Enveloppe existante, Ligne « compte espèces » créée et maintenue automatiquement par Enveloppe (non supprimable seule), PRU affiché/saisi uniquement pour les Enveloppes CTO. Les onglets d'Entité et la navigation multi-Entités sont fonctionnels. Les quatre autres domaines (Immobilier, Assurance-vie/PER, Crypto, Private equity/SCPI), le Reporting, le Profil, les Objectifs, le moteur de conseil et le chat sont hors périmètre — leurs tables existent déjà en base mais aucun écran ne les expose encore.
 
 ## API (résumé)
 
@@ -88,3 +90,11 @@ Seul le domaine **Liquidités** est câblé à l'UI (dashboard, création de Lig
 | GET | `/api/liquidites/lines/:id/valorisations` | Historique des Valorisations d'une Ligne |
 | POST | `/api/liquidites/lines/:id/valorisations` | Ajouter une entrée au journal (+ Mouvement optionnel) |
 | PUT / DELETE | `/api/liquidites/valorisations/:id` | Corriger / supprimer une entrée d'historique |
+| GET | `/api/bourse/envelopes?entity_id=<id>\|all` | Enveloppes Bourse (avec leurs Lignes imbriquées, fusionnées toutes Entités si `all`) |
+| POST | `/api/bourse/envelopes` | Créer une Enveloppe (PEA/PEA-PME/CTO) + son premier titre + sa Ligne « compte espèces » |
+| PUT / DELETE | `/api/bourse/envelopes/:id` | Modifier / supprimer une Enveloppe (cascade sur ses Lignes) |
+| POST | `/api/bourse/envelopes/:id/lines` | Ajouter un titre à une Enveloppe existante |
+| PUT / DELETE | `/api/bourse/lines/:id` | Modifier / supprimer un titre (le compte espèces ne se supprime pas seul) |
+| GET | `/api/bourse/lines/:id/valorisations` | Historique des Valorisations d'une Ligne Bourse |
+| POST | `/api/bourse/lines/:id/valorisations` | Ajouter une entrée au journal (+ Mouvement optionnel : achat/vente ou versement/retrait) |
+| PUT / DELETE | `/api/bourse/valorisations/:id` | Corriger / supprimer une entrée d'historique |

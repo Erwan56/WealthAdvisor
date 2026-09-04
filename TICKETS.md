@@ -6,16 +6,16 @@ Implementation backlog derived from [`PRD.md`](PRD.md). Each ticket is a batch o
 
 - [x] Scaffold — monorepo layout, full DB schema (all domains), one-click start script (PRD §10, §11)
 - [x] Liquidités vertical slice — dashboard, entity tabs, journal/Valorisation history, CRUD via API (PRD §3.1, §5.1, §5.2)
+- [x] Bourse vertical slice — PEA/PEA-PME/CTO Enveloppe, titre Ligne (nom/ISIN, quantité, PRU for CTO only), auto-managed "compte espèces" Ligne per Enveloppe, real CRUD via API (PRD §3.2, §5.1, §5.2)
 
 ---
 
 ## Ticket 1 — Domain vertical slices
 
-Status: **Not started**
+Status: **In progress** (Bourse done — see Done section above)
 
-Repeat the Liquidités pattern (dashboard rail entry, ledger, journal, create panel, real CRUD via API) for the remaining five domains. Schema for all of them already exists (§11); this is API + UI only. Liquidités and Immobilier have no Enveloppe — the other four do, so those slices additionally need Enveloppe create/list handling.
+Repeat the Liquidités pattern (dashboard rail entry, ledger, journal, create panel, real CRUD via API) for the remaining four domains. Schema for all of them already exists (§11); this is API + UI only. Liquidités and Immobilier have no Enveloppe — the other three do, so those slices additionally need Enveloppe create/list handling.
 
-- [ ] Bourse — PEA/PEA-PME/CTO Enveloppe, titre Ligne (nom/ISIN, quantité, PRU for CTO only), special "compte espèces" Ligne per Enveloppe (§3.2)
 - [ ] Immobilier — Ligne (prix d'acquisition total, date, résidence principale, régime location) + `valorisation_immobilier` fields (capital restant dû, loyer, charges…); derived rendement brut/net + cash-flow displayed on the Ligne (§3.3, §5.2 amendment, formulas in §7.3)
 - [ ] Assurance-vie / PER — Enveloppe = contrat (AV/PER type), Ligne = support (fonds euro/UC) (§3.4)
 - [ ] Crypto — Enveloppe = portefeuille par plateforme (plateforme étrangère, prix d'acquisition cumulé), Ligne = actif (symbole, quantité) (§3.5)

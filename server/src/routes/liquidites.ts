@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/client.js';
+import { recomputeLineCurrentValue } from '../db/valorisations.js';
 
 export const liquiditesRouter = Router();
 
@@ -13,22 +14,6 @@ const LINE_SELECT = `
   JOIN entities e ON e.id = l.entity_id
   WHERE l.domaine = 'liquidites'
 `;
-
-function recomputeLineCurrentValue(lineId: number): void {
-  const latest = db
-    .prepare('SELECT date, valeur FROM valorisations WHERE line_id = ? ORDER BY date DESC, id DESC LIMIT 1')
-    .get(lineId) as { date: string; valeur: number } | undefined;
-
-  if (latest) {
-    db.prepare('UPDATE lines SET valeur_actuelle = ?, date_derniere_valorisation = ? WHERE id = ?').run(
-      latest.valeur,
-      latest.date,
-      lineId
-    );
-  } else {
-    db.prepare('UPDATE lines SET valeur_actuelle = 0, date_derniere_valorisation = NULL WHERE id = ?').run(lineId);
-  }
-}
 
 // GET /api/liquidites/lines?entity_id=<id>|all
 liquiditesRouter.get('/lines', (req, res) => {

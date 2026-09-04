@@ -30,6 +30,37 @@ export interface Valorisation {
   valeur: number;
 }
 
+export type BourseEnvelopeType = 'PEA' | 'PEA-PME' | 'CTO';
+
+export const BOURSE_ENVELOPE_TYPES: BourseEnvelopeType[] = ['PEA', 'PEA-PME', 'CTO'];
+
+export interface BourseLine {
+  id: number;
+  entity_id: number;
+  envelope_id: number;
+  libelle: string;
+  valeur_actuelle: number;
+  date_derniere_valorisation: string | null;
+  note: string | null;
+  nom_isin: string | null;
+  quantite: number | null;
+  pru: number | null;
+  est_compte_especes: 0 | 1;
+}
+
+export interface BourseEnvelope {
+  id: number;
+  entity_id: number;
+  entity_libelle: string;
+  entity_type: EntityType;
+  libelle: string;
+  type: BourseEnvelopeType;
+  date_ouverture: string | null;
+  statut: string | null;
+  valeur_totale: number;
+  lines: BourseLine[];
+}
+
 export const DOMAIN_LABELS: Record<string, string> = {
   liquidites: 'Liquidités',
   bourse: 'Bourse',

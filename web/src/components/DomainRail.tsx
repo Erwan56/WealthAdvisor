@@ -9,7 +9,7 @@ export function DomainRail({ active, onSelect }: Props) {
   return (
     <nav className="domain-rail">
       {DOMAIN_KEYS.map((k) => {
-        const enabled = k === 'liquidites';
+        const enabled = k === 'liquidites' || k === 'bourse';
         return (
           <button
             key={k}

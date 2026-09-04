@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { BourseDashboard } from './components/BourseDashboard';
 import { CreateEntityPanel } from './components/CreateEntityPanel';
 import { DomainRail } from './components/DomainRail';
 import { EntityTabs } from './components/EntityTabs';
@@ -51,6 +52,9 @@ export function App() {
           <DomainRail active={domain} onSelect={setDomain} />
           {domain === 'liquidites' && (
             <LiquiditesDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          )}
+          {domain === 'bourse' && (
+            <BourseDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
           )}
         </div>
       </main>
