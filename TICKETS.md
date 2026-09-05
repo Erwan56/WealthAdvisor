@@ -14,6 +14,7 @@ Implementation backlog derived from [`PRD.md`](PRD.md). Each ticket is a batch o
 - [x] Reporting — KPI cards (Patrimoine total/net), donut by domain, domain table (valeur/part/variation/sparkline), per-domain drilldown with individual Ligne/Enveloppe deltas; consolidated + per-Entité views (PRD §5.3, §5.1)
 - [x] Profil & Questionnaire de risque — single anchored-navigation form (identité/fiscalité, situation familiale, questionnaire), 4-question scored questionnaire → bucket + connaissance, result card with "Ajuster en chat" placeholder (PRD §5.4, §2.2, ticket 02)
 - [x] Objectifs — card grid, 3-step creation assistant, progress bar + estimated-date-reached (linear trend on Valorisation history, ticket 26), quick-edit lien patrimoine (total/domaines/entité), suggested-template cards, calculette FIRE (25× multiplier, gross-vs-net warning) (PRD §5.5, §9, tickets 09/10/12)
+- [x] Advice engine (deterministic layer) — fiscal constants module codifying §8 (11 uncertain points resolved with a `fiable`/`a_verifier` confidence flag each), moteur de conseil skeleton, and all 5 domain rule sets (Liquidités A/B/C + réserve de précaution immobilier, Bourse, Immobilier, Assurance-vie/PER, Crypto & PE/SCPI) exposed via `GET /api/conseils` (PRD §6-§7-§8, ticket 3)
 
 ---
 
@@ -27,14 +28,16 @@ Status: **Done** — see Done section above (Reporting, Profil & Questionnaire d
 
 ## Ticket 3 — Advice engine (deterministic layer)
 
-Status: **Not started**
+Status: **Done** — see Done section above.
 
-- [ ] Fiscal rules/constants module codifying §8 — **must resolve the 11 flagged uncertain points first** (e.g. exact PS rate PEA/crypto post-LFSS 2026, PER-TNS ceiling, AV death allowance beyond the abattement)
-- [ ] Moteur de conseil skeleton (deterministic-only, no LLM yet) + Liquidités rules A/B/C + réserve de précaution immobilier (§6, §7.1)
-- [ ] Règles Bourse — concentration >25%, cash dormant in Enveloppe, PEA vs CTO fiscal angle (§7.2)
-- [ ] Règles Immobilier — rentabilité anormale, prêt bientôt soldé, seuil IFI (§7.3)
-- [ ] Règles Assurance-vie / PER — cap 8 ans, seuil 150k€, plafond PER (§7.4)
-- [ ] Règles Crypto & PE/SCPI — exposition par profil de risque, exposition PE/SCPI plate, échéance de blocage (§7.5)
+- [x] Fiscal rules/constants module codifying §8 — 11 flagged uncertain points resolved: each adopts a best-available value tagged `a_verifier` (e.g. PS rate PEA/crypto post-LFSS 2026 taken at 18.6%) so the layer never blocks on uncertainty (`server/src/advice/fiscal-constants.ts`). PER-TNS ceiling and AV death allowance are recorded as reference constants but not consumed by any socle rule (see next bullets).
+- [x] Moteur de conseil skeleton (deterministic-only, no LLM yet) + Liquidités rules A/B/C + réserve de précaution immobilier (§6, §7.1) — `server/src/advice/engine.ts`, `rules/liquidites.ts`
+- [x] Règles Bourse — concentration >25%, cash dormant in Enveloppe, PEA vs CTO fiscal angle (§7.2) — `rules/bourse.ts`
+- [x] Règles Immobilier — rentabilité anormale, prêt bientôt soldé, seuil IFI (§7.3) — `rules/immobilier.ts`
+- [x] Règles Assurance-vie / PER — cap 8 ans, seuil 150k€, plafond PER (§7.4) — `rules/avper.ts`
+- [x] Règles Crypto & PE/SCPI — exposition par profil de risque, exposition PE/SCPI plate, échéance de blocage (§7.5) — `rules/cryptoPe.ts`
+
+Exposed via `GET /api/conseils?entity_id=<id>|all`, recomputed from current state on every call (no persistence, no background job — PRD §6). Each Finding carries its own `chiffres` (numeric guardrail: the future LLM layer only restates these, never recomputes) and a `confiance` flag. No UI surface yet — proactive display and the LLM narration layer are Ticket 4.
 
 ## Ticket 4 — LLM integration
 

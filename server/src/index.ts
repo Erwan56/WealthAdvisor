@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { migrate } from './db/client.js';
 import { avPerRouter } from './routes/avper.js';
 import { bourseRouter } from './routes/bourse.js';
+import { conseilsRouter } from './routes/conseils.js';
 import { cryptoRouter } from './routes/crypto.js';
 import { entitiesRouter } from './routes/entities.js';
 import { immobilierRouter } from './routes/immobilier.js';
@@ -33,6 +34,7 @@ app.use('/api/pe-scpi', peScpiRouter);
 app.use('/api/reporting', reportingRouter);
 app.use('/api/profil', profilRouter);
 app.use('/api/objectifs', objectifsRouter);
+app.use('/api/conseils', conseilsRouter);
 
 // Serve the built web app when present (production / one-click start flow).
 const webDist = join(__dirname, '..', '..', 'web', 'dist');
