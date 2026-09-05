@@ -7,19 +7,16 @@ Implementation backlog derived from [`PRD.md`](PRD.md). Each ticket is a batch o
 - [x] Scaffold — monorepo layout, full DB schema (all domains), one-click start script (PRD §10, §11)
 - [x] Liquidités vertical slice — dashboard, entity tabs, journal/Valorisation history, CRUD via API (PRD §3.1, §5.1, §5.2)
 - [x] Bourse vertical slice — PEA/PEA-PME/CTO Enveloppe, titre Ligne (nom/ISIN, quantité, PRU for CTO only), auto-managed "compte espèces" Ligne per Enveloppe, real CRUD via API (PRD §3.2, §5.1, §5.2)
+- [x] Immobilier vertical slice — Ligne (prix d'acquisition total, date, résidence principale, régime location) + `valorisation_immobilier` fields per Valorisation entry; rendement brut/net + cash-flow derived and displayed on the Ligne (PRD §3.3, §5.2 amendment, formulas from issue 21)
+- [x] Assurance-vie / PER vertical slice — Enveloppe = contrat (assurance_vie/per), Ligne = support (fonds_euro/uc), real CRUD via API (PRD §3.4)
+- [x] Crypto vertical slice — Enveloppe = portefeuille par plateforme (plateforme étrangère, prix d'acquisition cumulé), Ligne = actif (symbole, quantité), real CRUD via API (PRD §3.5)
+- [x] Private equity / SCPI vertical slice — Enveloppe = fonds (type dispositif, durée de blocage), Ligne = part souscrite (nombre de parts), real CRUD via API (PRD §3.6)
 
 ---
 
 ## Ticket 1 — Domain vertical slices
 
-Status: **In progress** (Bourse done — see Done section above)
-
-Repeat the Liquidités pattern (dashboard rail entry, ledger, journal, create panel, real CRUD via API) for the remaining four domains. Schema for all of them already exists (§11); this is API + UI only. Liquidités and Immobilier have no Enveloppe — the other three do, so those slices additionally need Enveloppe create/list handling.
-
-- [ ] Immobilier — Ligne (prix d'acquisition total, date, résidence principale, régime location) + `valorisation_immobilier` fields (capital restant dû, loyer, charges…); derived rendement brut/net + cash-flow displayed on the Ligne (§3.3, §5.2 amendment, formulas in §7.3)
-- [ ] Assurance-vie / PER — Enveloppe = contrat (AV/PER type), Ligne = support (fonds euro/UC) (§3.4)
-- [ ] Crypto — Enveloppe = portefeuille par plateforme (plateforme étrangère, prix d'acquisition cumulé), Ligne = actif (symbole, quantité) (§3.5)
-- [ ] Private equity / SCPI — Enveloppe = fonds (type dispositif, durée de blocage), Ligne = part souscrite (§3.6)
+Status: **Done** — see Done section above for all six domains (Liquidités, Bourse, Immobilier, Assurance-vie/PER, Crypto, Private equity/SCPI).
 
 ## Ticket 2 — Cross-cutting screens
 

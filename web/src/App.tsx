@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { AvPerDashboard } from './components/AvPerDashboard';
 import { BourseDashboard } from './components/BourseDashboard';
 import { CreateEntityPanel } from './components/CreateEntityPanel';
+import { CryptoDashboard } from './components/CryptoDashboard';
 import { DomainRail } from './components/DomainRail';
 import { EntityTabs } from './components/EntityTabs';
+import { ImmobilierDashboard } from './components/ImmobilierDashboard';
 import { LiquiditesDashboard } from './components/LiquiditesDashboard';
+import { PeScpiDashboard } from './components/PeScpiDashboard';
 import { useToast } from './hooks/useToast';
 import type { Entity, EntityType } from './types';
 
@@ -55,6 +59,18 @@ export function App() {
           )}
           {domain === 'bourse' && (
             <BourseDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          )}
+          {domain === 'immobilier' && (
+            <ImmobilierDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          )}
+          {domain === 'av_per' && (
+            <AvPerDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          )}
+          {domain === 'crypto' && (
+            <CryptoDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          )}
+          {domain === 'pe_scpi' && (
+            <PeScpiDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
           )}
         </div>
       </main>

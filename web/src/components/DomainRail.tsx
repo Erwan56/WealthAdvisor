@@ -8,21 +8,16 @@ interface Props {
 export function DomainRail({ active, onSelect }: Props) {
   return (
     <nav className="domain-rail">
-      {DOMAIN_KEYS.map((k) => {
-        const enabled = k === 'liquidites' || k === 'bourse';
-        return (
-          <button
-            key={k}
-            type="button"
-            className={`rail-item ${k === active ? 'active' : ''}`}
-            disabled={!enabled}
-            title={enabled ? undefined : 'Domaine pas encore disponible dans cette version'}
-            onClick={() => enabled && onSelect(k)}
-          >
-            {DOMAIN_LABELS[k]}
-          </button>
-        );
-      })}
+      {DOMAIN_KEYS.map((k) => (
+        <button
+          key={k}
+          type="button"
+          className={`rail-item ${k === active ? 'active' : ''}`}
+          onClick={() => onSelect(k)}
+        >
+          {DOMAIN_LABELS[k]}
+        </button>
+      ))}
     </nav>
   );
 }

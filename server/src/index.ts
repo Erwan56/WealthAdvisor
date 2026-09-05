@@ -4,9 +4,13 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrate } from './db/client.js';
+import { avPerRouter } from './routes/avper.js';
 import { bourseRouter } from './routes/bourse.js';
+import { cryptoRouter } from './routes/crypto.js';
 import { entitiesRouter } from './routes/entities.js';
+import { immobilierRouter } from './routes/immobilier.js';
 import { liquiditesRouter } from './routes/liquidites.js';
+import { peScpiRouter } from './routes/peScpi.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -19,6 +23,10 @@ app.use(express.json());
 app.use('/api/entities', entitiesRouter);
 app.use('/api/liquidites', liquiditesRouter);
 app.use('/api/bourse', bourseRouter);
+app.use('/api/immobilier', immobilierRouter);
+app.use('/api/av-per', avPerRouter);
+app.use('/api/crypto', cryptoRouter);
+app.use('/api/pe-scpi', peScpiRouter);
 
 // Serve the built web app when present (production / one-click start flow).
 const webDist = join(__dirname, '..', '..', 'web', 'dist');
