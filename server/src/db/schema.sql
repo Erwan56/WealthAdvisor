@@ -43,13 +43,16 @@ CREATE TABLE IF NOT EXISTS questionnaire_risque_reponses (
 -- ---------------------------------------------------------------------
 -- Objectifs
 -- ---------------------------------------------------------------------
+-- lien_patrimoine_type est nullable : un nouvel Objectif reste "sans lien
+-- configuré" (pas d'avancée affichée) tant qu'il n'est pas réglé explicitement
+-- (ticket 10 — pas de valeur par défaut).
 CREATE TABLE IF NOT EXISTS objectifs (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
   type                  TEXT NOT NULL,
   libelle               TEXT NOT NULL,
   horizon               TEXT,
   montant_cible         REAL,
-  lien_patrimoine_type  TEXT NOT NULL CHECK (lien_patrimoine_type IN ('total', 'domaines', 'entite')),
+  lien_patrimoine_type  TEXT CHECK (lien_patrimoine_type IN ('total', 'domaines', 'entite')),
   lien_domaines         TEXT, -- JSON array de domaines, NULL sinon
   lien_entite_id        INTEGER REFERENCES entities(id)
 );

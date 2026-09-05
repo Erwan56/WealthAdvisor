@@ -14,3 +14,8 @@ export function today(): string {
 export function pct(v: number): string {
   return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 }
+
+export function monthYear(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+}

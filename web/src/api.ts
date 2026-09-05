@@ -12,10 +12,17 @@ import type {
   EntityType,
   ImmobilierLine,
   ImmobilierValorisation,
+  LienPatrimoineType,
   LiquiditeLine,
+  Objectif,
+  ObjectifType,
   PeScpiDispositif,
   PeScpiEnvelope,
   PeScpiLine,
+  Profil,
+  QuestionnaireQuestion,
+  ReportingDomainDetail,
+  ReportingSummary,
   Valorisation,
 } from './types';
 
@@ -260,5 +267,44 @@ export const api = {
     updateValorisation: (id: number, data: { date?: string; valeur?: number }) =>
       request<Valorisation>(`/pe-scpi/valorisations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteValorisation: (id: number) => request<void>(`/pe-scpi/valorisations/${id}`, { method: 'DELETE' }),
+  },
+  reporting: {
+    summary: (entityId: number | 'all') => request<ReportingSummary>(`/reporting/summary?entity_id=${entityId}`),
+    domain: (domaine: string, entityId: number | 'all') =>
+      request<ReportingDomainDetail>(`/reporting/domain/${domaine}?entity_id=${entityId}`),
+  },
+  profil: {
+    get: () => request<Profil>('/profil'),
+    update: (data: Partial<Omit<Profil, 'id' | 'risque_bucket' | 'risque_connaissance' | 'risque_override_manuel'>>) =>
+      request<Profil>('/profil', { method: 'PUT', body: JSON.stringify(data) }),
+    questions: () => request<QuestionnaireQuestion[]>('/profil/questionnaire/questions'),
+    reponses: () => request<{ question_index: number; reponse: string; date: string }[]>('/profil/questionnaire/reponses'),
+    submitQuestionnaire: (reponses: string[]) =>
+      request<Profil>('/profil/questionnaire', { method: 'POST', body: JSON.stringify({ reponses }) }),
+  },
+  objectifs: {
+    list: () => request<Objectif[]>('/objectifs'),
+    create: (data: {
+      type: ObjectifType;
+      libelle: string;
+      horizon?: string;
+      montant_cible?: number;
+      lien_patrimoine_type?: LienPatrimoineType;
+      lien_domaines?: string[];
+      lien_entite_id?: number;
+    }) => request<Objectif>('/objectifs', { method: 'POST', body: JSON.stringify(data) }),
+    bulk: (templates: string[]) =>
+      request<Objectif[]>('/objectifs/bulk', { method: 'POST', body: JSON.stringify({ templates }) }),
+    update: (
+      id: number,
+      data: {
+        horizon?: string | null;
+        montant_cible?: number | null;
+        lien_patrimoine_type?: LienPatrimoineType | null;
+        lien_domaines?: string[];
+        lien_entite_id?: number;
+      }
+    ) => request<Objectif>(`/objectifs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) => request<void>(`/objectifs/${id}`, { method: 'DELETE' }),
   },
 };

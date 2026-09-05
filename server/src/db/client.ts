@@ -18,7 +18,35 @@ db.pragma('foreign_keys = ON');
 export function migrate(): void {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
+  migrateObjectifsLienNullable();
   seed();
+}
+
+// `lien_patrimoine_type` was originally NOT NULL; ticket 10 requires it nullable
+// (a new Objectif starts without a lien configured). `CREATE TABLE IF NOT EXISTS`
+// doesn't retrofit an already-created table, so rebuild it once if a stale copy
+// is found — safe since the table only ever holds rows created by this app.
+function migrateObjectifsLienNullable(): void {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'objectifs'").get() as
+    | { sql: string }
+    | undefined;
+  if (!row || !row.sql.includes('lien_patrimoine_type  TEXT NOT NULL')) return;
+
+  db.exec(`
+    ALTER TABLE objectifs RENAME TO objectifs_old;
+    CREATE TABLE objectifs (
+      id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+      type                  TEXT NOT NULL,
+      libelle               TEXT NOT NULL,
+      horizon               TEXT,
+      montant_cible         REAL,
+      lien_patrimoine_type  TEXT CHECK (lien_patrimoine_type IN ('total', 'domaines', 'entite')),
+      lien_domaines         TEXT,
+      lien_entite_id        INTEGER REFERENCES entities(id)
+    );
+    INSERT INTO objectifs SELECT * FROM objectifs_old;
+    DROP TABLE objectifs_old;
+  `);
 }
 
 function seed(): void {

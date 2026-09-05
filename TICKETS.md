@@ -11,6 +11,9 @@ Implementation backlog derived from [`PRD.md`](PRD.md). Each ticket is a batch o
 - [x] Assurance-vie / PER vertical slice — Enveloppe = contrat (assurance_vie/per), Ligne = support (fonds_euro/uc), real CRUD via API (PRD §3.4)
 - [x] Crypto vertical slice — Enveloppe = portefeuille par plateforme (plateforme étrangère, prix d'acquisition cumulé), Ligne = actif (symbole, quantité), real CRUD via API (PRD §3.5)
 - [x] Private equity / SCPI vertical slice — Enveloppe = fonds (type dispositif, durée de blocage), Ligne = part souscrite (nombre de parts), real CRUD via API (PRD §3.6)
+- [x] Reporting — KPI cards (Patrimoine total/net), donut by domain, domain table (valeur/part/variation/sparkline), per-domain drilldown with individual Ligne/Enveloppe deltas; consolidated + per-Entité views (PRD §5.3, §5.1)
+- [x] Profil & Questionnaire de risque — single anchored-navigation form (identité/fiscalité, situation familiale, questionnaire), 4-question scored questionnaire → bucket + connaissance, result card with "Ajuster en chat" placeholder (PRD §5.4, §2.2, ticket 02)
+- [x] Objectifs — card grid, 3-step creation assistant, progress bar + estimated-date-reached (linear trend on Valorisation history, ticket 26), quick-edit lien patrimoine (total/domaines/entité), suggested-template cards, calculette FIRE (25× multiplier, gross-vs-net warning) (PRD §5.5, §9, tickets 09/10/12)
 
 ---
 
@@ -20,11 +23,7 @@ Status: **Done** — see Done section above for all six domains (Liquidités, Bo
 
 ## Ticket 2 — Cross-cutting screens
 
-Status: **Not started**
-
-- [ ] Reporting — KPI cards (Patrimoine total/net), donut by domain, domain table (valeur/part/variation/sparkline), per-domain drilldown with individual Ligne deltas; consolidated + per-Entité views (§5.3, §5.1)
-- [ ] Profil & Questionnaire de risque — single anchored-navigation form (identité/fiscalité, situation familiale, questionnaire), risk bucket result card (§5.4, §2.2)
-- [ ] Objectifs — card grid, 3-step creation assistant, progress bar + estimated-date-reached (linear trend on Valorisation history), suggested-template cards, calculette FIRE (25× multiplier, gross-vs-net warning) (§5.5, §9)
+Status: **Done** — see Done section above (Reporting, Profil & Questionnaire de risque, Objectifs). The 4-question risk-scoring rubric (point values, bucket thresholds) was designed during implementation — PRD/tickets specified the methodology but not exact numbers.
 
 ## Ticket 3 — Advice engine (deterministic layer)
 

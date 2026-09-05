@@ -10,7 +10,10 @@ import { cryptoRouter } from './routes/crypto.js';
 import { entitiesRouter } from './routes/entities.js';
 import { immobilierRouter } from './routes/immobilier.js';
 import { liquiditesRouter } from './routes/liquidites.js';
+import { objectifsRouter } from './routes/objectifs.js';
 import { peScpiRouter } from './routes/peScpi.js';
+import { profilRouter } from './routes/profil.js';
+import { reportingRouter } from './routes/reporting.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -27,6 +30,9 @@ app.use('/api/immobilier', immobilierRouter);
 app.use('/api/av-per', avPerRouter);
 app.use('/api/crypto', cryptoRouter);
 app.use('/api/pe-scpi', peScpiRouter);
+app.use('/api/reporting', reportingRouter);
+app.use('/api/profil', profilRouter);
+app.use('/api/objectifs', objectifsRouter);
 
 // Serve the built web app when present (production / one-click start flow).
 const webDist = join(__dirname, '..', '..', 'web', 'dist');

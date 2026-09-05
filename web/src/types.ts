@@ -181,6 +181,138 @@ export interface PeScpiEnvelope {
   lines: PeScpiLine[];
 }
 
+// ---------------------------------------------------------------------
+// Reporting (ticket 2 — PRD §5.3)
+// ---------------------------------------------------------------------
+export interface Point {
+  date: string;
+  value: number;
+}
+
+export interface Indicateur {
+  label: string;
+  value: string;
+}
+
+export interface ReportingDomainSummary {
+  domaine: string;
+  valeur: number;
+  part: number;
+  variation: number | null;
+  sparkline: Point[];
+  indicateur_cle: Indicateur | null;
+}
+
+export interface ReportingSummary {
+  patrimoine_total: number;
+  patrimoine_net: number;
+  nombre_entites: number;
+  domains: ReportingDomainSummary[];
+}
+
+export interface ReportingDomainItem {
+  id: number;
+  libelle: string;
+  entity_libelle: string;
+  valeur: number;
+  delta: number | null;
+}
+
+export interface ReportingDomainDetail {
+  domaine: string;
+  curve: Point[];
+  indicateur_cle: Indicateur | null;
+  items: ReportingDomainItem[];
+}
+
+// ---------------------------------------------------------------------
+// Profil & Questionnaire de risque (ticket 2 — PRD §5.4)
+// ---------------------------------------------------------------------
+export type RisqueBucket = 'prudent' | 'equilibre' | 'dynamique';
+export type RisqueConnaissance = 'novice' | 'initie' | 'expert';
+
+export interface Profil {
+  id: 1;
+  date_naissance: string | null;
+  horizon_global: string | null;
+  tmi: number | null;
+  plafond_per_annuel: number | null;
+  depenses_mensuelles_courantes: number | null;
+  mois_reserve_visees: number;
+  statut_marital: string | null;
+  personnes_a_charge: number | null;
+  risque_bucket: RisqueBucket | null;
+  risque_connaissance: RisqueConnaissance | null;
+  risque_override_manuel: 0 | 1;
+}
+
+export interface QuestionnaireQuestion {
+  index: number;
+  title: string;
+  options: { value: string; label: string }[];
+}
+
+export const RISQUE_BUCKET_LABELS: Record<RisqueBucket, string> = {
+  prudent: 'Prudent',
+  equilibre: 'Équilibré',
+  dynamique: 'Dynamique',
+};
+
+export const RISQUE_CONNAISSANCE_LABELS: Record<RisqueConnaissance, string> = {
+  novice: 'Novice',
+  initie: 'Initié',
+  expert: 'Expert',
+};
+
+// ---------------------------------------------------------------------
+// Objectifs (ticket 2 — PRD §5.5)
+// ---------------------------------------------------------------------
+export type ObjectifType =
+  | 'retraite'
+  | 'achat_immobilier'
+  | 'transmission'
+  | 'securite_urgence'
+  | 'independance_financiere'
+  | 'projet_libre';
+
+export const OBJECTIF_TYPE_LABELS: Record<ObjectifType, string> = {
+  retraite: 'Retraite',
+  achat_immobilier: 'Achat immobilier',
+  transmission: 'Transmission',
+  securite_urgence: 'Sécurité / urgence',
+  independance_financiere: 'Indépendance financière',
+  projet_libre: 'Projet libre',
+};
+
+export type LienPatrimoineType = 'total' | 'domaines' | 'entite';
+export type EstimationStatus = 'ok' | 'insufficient' | 'flat_or_negative' | 'no_lien' | 'no_target';
+
+export interface Objectif {
+  id: number;
+  type: ObjectifType;
+  libelle: string;
+  horizon: string | null;
+  montant_cible: number | null;
+  lien_patrimoine_type: LienPatrimoineType | null;
+  lien_domaines: string[] | null;
+  lien_entite_id: number | null;
+  montant_actuel: number | null;
+  avancee_pct: number | null;
+  estimation_date: string | null;
+  estimation_status: EstimationStatus;
+}
+
+export const OBJECTIF_TEMPLATES: { key: string; type: ObjectifType; libelle: string }[] = [
+  { key: 'fonds_urgence', type: 'securite_urgence', libelle: "Fonds d'urgence" },
+  { key: 'retraite', type: 'retraite', libelle: 'Retraite' },
+  { key: 'achat_immobilier', type: 'achat_immobilier', libelle: 'Achat immobilier' },
+  { key: 'transmission', type: 'transmission', libelle: 'Transmission' },
+  { key: 'independance_financiere', type: 'independance_financiere', libelle: 'Indépendance financière' },
+];
+
+// Multiplicateur FIRE figé — règle des 4 % (Trinity/Bengen), non ajustable (ticket 12).
+export const FIRE_MULTIPLIER = 25;
+
 export const DOMAIN_LABELS: Record<string, string> = {
   liquidites: 'Liquidités',
   bourse: 'Bourse',
@@ -191,3 +323,14 @@ export const DOMAIN_LABELS: Record<string, string> = {
 };
 
 export const DOMAIN_KEYS = Object.keys(DOMAIN_LABELS);
+
+// CSS custom properties (defined in styles.css, light + dark) — one hue per
+// Domaine, shared by the Reporting donut, sparklines and legends.
+export const DOMAIN_COLOR_VARS: Record<string, string> = {
+  liquidites: 'var(--dom-liquidites)',
+  bourse: 'var(--dom-bourse)',
+  immobilier: 'var(--dom-immobilier)',
+  av_per: 'var(--dom-av_per)',
+  crypto: 'var(--dom-crypto)',
+  pe_scpi: 'var(--dom-pe_scpi)',
+};
