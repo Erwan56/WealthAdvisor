@@ -241,3 +241,36 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 32px 100px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font-family: 'Public Sans'; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--muted); cursor: pointer; }
 .chip.selected { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+
+/* nav badge — proactive anomaly count on the Conseils tab (ticket 4, PRD §6) */
+.top-nav-item { position: relative; }
+.nav-badge { position: absolute; top: 2px; right: 3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; }
+
+/* conseils — findings + chat (ticket 4) */
+.conseils-shell { align-items: stretch; }
+.conseils-chat-col { max-width: 480px; }
+.finding-group { padding: 16px 20px; margin-bottom: 16px; }
+.finding-group h3 { font-size: 14px; font-weight: 600; margin: 0 0 10px; }
+.finding-row { padding: 10px 0; border-top: 1px solid var(--line); }
+.finding-row:first-of-type { border-top: none; padding-top: 0; }
+.finding-row-head { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+.finding-domaine { cursor: default; }
+.finding-confiance { cursor: default; }
+.finding-confiance.a_verifier { border-color: var(--bad); color: var(--bad); }
+.finding-confiance.fiable { border-color: var(--good); color: var(--good); }
+.finding-titre { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.finding-detail { font-size: 12.5px; line-height: 1.5; }
+
+.conseils-chat { display: flex; flex-direction: column; height: 640px; }
+.conseils-messages { flex: 1; overflow-y: auto; padding: 8px 0; }
+.conseils-msg { padding: 8px 20px; }
+.conseils-msg-bubble { font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; padding: 10px 14px; border-radius: 10px; max-width: 92%; }
+.conseils-msg.user .conseils-msg-bubble { margin-left: auto; background: var(--accent); color: var(--accent-ink); }
+.conseils-msg.assistant .conseils-msg-bubble { background: var(--surface-2); }
+.conseils-typing .conseils-msg-bubble { color: var(--muted); }
+.conseils-reserves { margin: 6px 0 0; }
+.conseils-reserve { font-size: 12px; color: var(--muted); font-style: italic; }
+.conseils-alerte { margin-top: 6px; font-size: 12px; color: var(--bad); font-weight: 600; }
+.conseils-override-card { margin: 0 20px 12px; padding: 12px 14px; border: 1.5px dashed var(--accent); border-radius: 10px; font-size: 13px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
+.conseils-input-row { display: flex; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--line); }
+.conseils-input-row .field-input { flex: 1; }

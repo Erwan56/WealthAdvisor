@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import { AvPerDashboard } from './components/AvPerDashboard';
 import { BourseDashboard } from './components/BourseDashboard';
+import { ConseilsScreen } from './components/ConseilsScreen';
 import { CreateEntityPanel } from './components/CreateEntityPanel';
 import { CryptoDashboard } from './components/CryptoDashboard';
 import { DomainRail } from './components/DomainRail';
@@ -15,13 +16,14 @@ import { ReportingDashboard } from './components/ReportingDashboard';
 import { useToast } from './hooks/useToast';
 import type { Entity, EntityType } from './types';
 
-type Screen = 'dashboard' | 'reporting' | 'profil' | 'objectifs';
+type Screen = 'dashboard' | 'reporting' | 'profil' | 'objectifs' | 'conseils';
 
 const SCREENS: { key: Screen; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'reporting', label: 'Reporting' },
   { key: 'profil', label: 'Profil' },
   { key: 'objectifs', label: 'Objectifs' },
+  { key: 'conseils', label: 'Conseils' },
 ];
 
 export function App() {
@@ -30,6 +32,7 @@ export function App() {
   const [domain, setDomain] = useState('liquidites');
   const [screen, setScreen] = useState<Screen>('dashboard');
   const [showCreateEntity, setShowCreateEntity] = useState(false);
+  const [anomalyCount, setAnomalyCount] = useState(0);
   const { toast, notify } = useToast();
 
   const loadEntities = () => {
@@ -42,6 +45,14 @@ export function App() {
   };
 
   useEffect(loadEntities, []);
+
+  // Déclenchement proactif (PRD §6) : recompte les anomalies à l'ouverture de l'app et à
+  // chaque navigation — le moteur recalcule depuis l'état courant à chaque appel (pas de
+  // job périodique, pas de cache), donc toute mise à jour du patrimoine se reflète dès le
+  // prochain changement d'écran ou d'Entité.
+  useEffect(() => {
+    api.conseils.findings('all').then(({ findings }) => setAnomalyCount(findings.filter((f) => f.type === 'anomalie').length));
+  }, [screen, selectedEntity]);
 
   const createEntity = async (data: { libelle: string; type: EntityType }) => {
     const created = await api.entities.create(data);
@@ -65,10 +76,11 @@ export function App() {
               onClick={() => setScreen(s.key)}
             >
               {s.label}
+              {s.key === 'conseils' && anomalyCount > 0 && <span className="nav-badge">{anomalyCount}</span>}
             </button>
           ))}
         </nav>
-        {(screen === 'dashboard' || screen === 'reporting') && (
+        {(screen === 'dashboard' || screen === 'reporting' || screen === 'conseils') && (
           <EntityTabs
             entities={entities}
             selected={selectedEntity}
@@ -103,8 +115,9 @@ export function App() {
           </div>
         )}
         {screen === 'reporting' && <ReportingDashboard entities={entities} selectedEntity={selectedEntity} />}
-        {screen === 'profil' && <ProfilScreen notify={notify} />}
+        {screen === 'profil' && <ProfilScreen notify={notify} onNavigateConseils={() => setScreen('conseils')} />}
         {screen === 'objectifs' && <ObjectifsScreen entities={entities} notify={notify} />}
+        {screen === 'conseils' && <ConseilsScreen entities={entities} selectedEntity={selectedEntity} notify={notify} />}
       </main>
 
       {showCreateEntity && (

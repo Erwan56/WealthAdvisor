@@ -334,3 +334,39 @@ export const DOMAIN_COLOR_VARS: Record<string, string> = {
   crypto: 'var(--dom-crypto)',
   pe_scpi: 'var(--dom-pe_scpi)',
 };
+
+// ---------------------------------------------------------------------
+// Moteur de conseil hybride & chat (ticket 3 déterministe + ticket 4 LLM — PRD §6-§8)
+// ---------------------------------------------------------------------
+export type Confiance = 'fiable' | 'a_verifier';
+export type FindingType = 'anomalie' | 'contexte';
+export type FindingDomaine = 'liquidites' | 'bourse' | 'immobilier' | 'av_per' | 'crypto' | 'pe_scpi' | 'transverse';
+
+export interface Finding {
+  id: string;
+  domaine: FindingDomaine;
+  type: FindingType;
+  entity_id: number | null;
+  titre: string;
+  detail: string;
+  chiffres: Record<string, number | string | null>;
+  confiance: Confiance;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface OverrideProposal {
+  bucket: RisqueBucket;
+  connaissance: RisqueConnaissance | null;
+  raison: string;
+}
+
+export interface ChatResponse {
+  reponse: string;
+  reserves: string[];
+  override_propose: OverrideProposal | null;
+  alerte_chiffres: number[];
+}

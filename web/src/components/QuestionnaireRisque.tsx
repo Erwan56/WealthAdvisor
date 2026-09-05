@@ -7,13 +7,14 @@ interface Props {
   profil: Profil;
   notify: (message: string, warn?: boolean) => void;
   onUpdated: (profil: Profil) => void;
+  onNavigateConseils: () => void;
 }
 
-// Carte Questionnaire de risque : résultat courant + "Ajuster en chat" (bouton
-// découvrable, l'override réel se fait dans l'assistant conversationnel — hors
-// périmètre tant que le Ticket 4 LLM n'existe pas) + reprise du questionnaire
-// (4 questions scorées → bucket, écrase l'éventuel override précédent).
-export function QuestionnaireRisque({ profil, notify, onUpdated }: Props) {
+// Carte Questionnaire de risque : résultat courant + "Ajuster en chat" (renvoie vers
+// l'écran Conseils — l'override réel s'y fait via une proposition du LLM confirmée par
+// l'utilisateur, PRD §6/§12.1, ticket 4) + reprise du questionnaire (4 questions scorées →
+// bucket, écrase l'éventuel override précédent).
+export function QuestionnaireRisque({ profil, notify, onUpdated, onNavigateConseils }: Props) {
   const [questions, setQuestions] = useState<QuestionnaireQuestion[] | null>(null);
   const [retaking, setRetaking] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -70,11 +71,7 @@ export function QuestionnaireRisque({ profil, notify, onUpdated }: Props) {
             <button type="button" className="btn primary" onClick={startRetake}>
               {profil.risque_bucket ? 'Refaire le questionnaire' : 'Faire le questionnaire'}
             </button>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => notify('Disponible avec l’assistant conversationnel (à venir)', true)}
-            >
+            <button type="button" className="btn ghost" onClick={onNavigateConseils}>
               Ajuster en chat
             </button>
           </div>

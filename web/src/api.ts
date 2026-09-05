@@ -6,10 +6,13 @@ import type {
   BourseEnvelope,
   BourseEnvelopeType,
   BourseLine,
+  ChatMessage,
+  ChatResponse,
   CryptoEnvelope,
   CryptoLine,
   Entity,
   EntityType,
+  Finding,
   ImmobilierLine,
   ImmobilierValorisation,
   LienPatrimoineType,
@@ -23,6 +26,8 @@ import type {
   QuestionnaireQuestion,
   ReportingDomainDetail,
   ReportingSummary,
+  RisqueBucket,
+  RisqueConnaissance,
   Valorisation,
 } from './types';
 
@@ -281,6 +286,13 @@ export const api = {
     reponses: () => request<{ question_index: number; reponse: string; date: string }[]>('/profil/questionnaire/reponses'),
     submitQuestionnaire: (reponses: string[]) =>
       request<Profil>('/profil/questionnaire', { method: 'POST', body: JSON.stringify({ reponses }) }),
+    applyRiskOverride: (data: { bucket: RisqueBucket; connaissance?: RisqueConnaissance | null }) =>
+      request<Profil>('/profil/risque-override', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  conseils: {
+    findings: (entityId: number | 'all') => request<{ findings: Finding[] }>(`/conseils?entity_id=${entityId}`),
+    chat: (message: string, history: ChatMessage[]) =>
+      request<ChatResponse>('/conseils/chat', { method: 'POST', body: JSON.stringify({ message, history }) }),
   },
   objectifs: {
     list: () => request<Objectif[]>('/objectifs'),

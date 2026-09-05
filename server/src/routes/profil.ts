@@ -95,6 +95,33 @@ profilRouter.put('/', (req, res) => {
   res.json(db.prepare('SELECT * FROM profil WHERE id = 1').get());
 });
 
+const RISQUE_BUCKETS = ['prudent', 'equilibre', 'dynamique'] as const;
+const RISQUE_CONNAISSANCES = ['novice', 'initie', 'expert'] as const;
+
+// POST /api/profil/risque-override — applique l'override du bucket de Profil de risque proposé
+// par le chat de conseil (PRD §6, §12.1, ticket 4). Écriture volontairement séparée de la
+// proposition du LLM : celui-ci ne peut que suggérer (voir advice/prompt.ts), l'utilisateur
+// confirme explicitement côté UI avant que cette route ne soit appelée.
+profilRouter.post('/risque-override', (req, res) => {
+  const { bucket, connaissance } = req.body ?? {};
+  if (!RISQUE_BUCKETS.includes(bucket)) {
+    return res.status(400).json({ error: `bucket doit être l'un de : ${RISQUE_BUCKETS.join(', ')}` });
+  }
+  if (connaissance !== undefined && connaissance !== null && !RISQUE_CONNAISSANCES.includes(connaissance)) {
+    return res.status(400).json({ error: `connaissance doit être l'un de : ${RISQUE_CONNAISSANCES.join(', ')}` });
+  }
+
+  if (connaissance) {
+    db.prepare('UPDATE profil SET risque_bucket = ?, risque_connaissance = ?, risque_override_manuel = 1 WHERE id = 1').run(
+      bucket,
+      connaissance
+    );
+  } else {
+    db.prepare('UPDATE profil SET risque_bucket = ?, risque_override_manuel = 1 WHERE id = 1').run(bucket);
+  }
+  res.json(db.prepare('SELECT * FROM profil WHERE id = 1').get());
+});
+
 profilRouter.get('/questionnaire/questions', (_req, res) => {
   res.json(QUESTIONS.map((q) => ({ index: q.index, title: q.title, options: q.options.map(({ value, label }) => ({ value, label })) })));
 });

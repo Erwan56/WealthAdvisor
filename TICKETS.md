@@ -15,6 +15,7 @@ Implementation backlog derived from [`PRD.md`](PRD.md). Each ticket is a batch o
 - [x] Profil & Questionnaire de risque — single anchored-navigation form (identité/fiscalité, situation familiale, questionnaire), 4-question scored questionnaire → bucket + connaissance, result card with "Ajuster en chat" placeholder (PRD §5.4, §2.2, ticket 02)
 - [x] Objectifs — card grid, 3-step creation assistant, progress bar + estimated-date-reached (linear trend on Valorisation history, ticket 26), quick-edit lien patrimoine (total/domaines/entité), suggested-template cards, calculette FIRE (25× multiplier, gross-vs-net warning) (PRD §5.5, §9, tickets 09/10/12)
 - [x] Advice engine (deterministic layer) — fiscal constants module codifying §8 (11 uncertain points resolved with a `fiable`/`a_verifier` confidence flag each), moteur de conseil skeleton, and all 5 domain rule sets (Liquidités A/B/C + réserve de précaution immobilier, Bourse, Immobilier, Assurance-vie/PER, Crypto & PE/SCPI) exposed via `GET /api/conseils` (PRD §6-§7-§8, ticket 3)
+- [x] LLM integration — Claude Code CLI subprocess wiring, structured chat output with numeric guardrail, risk-profile override proposal mechanism, and the Conseils screen (proactive Findings + chat) (PRD §6, §10, §12.1, ticket 4)
 
 ---
 
@@ -41,13 +42,14 @@ Exposed via `GET /api/conseils?entity_id=<id>|all`, recomputed from current stat
 
 ## Ticket 4 — LLM integration
 
-Status: **Not started** — do this after at least one rule set from Ticket 3 exists to give the LLM something to narrate.
+Status: **Done** — see Done section above.
 
-- [ ] Claude Code CLI subprocess wiring (print/non-interactive mode, no separate Anthropic API key) (§10)
-- [ ] Structured output format from the CLI + backend parsing/validation
-- [ ] Numeric guardrail: LLM only restates figures it received from the deterministic layer, never recomputes (§6)
-- [ ] Risk-profile bucket override mechanism via chat under this CLI mode — flagged non-trivial, needs its own design pass (§6, §12.1)
-- [ ] Confidence-indicator plumbing for the "à vérifier" fiscal points (§6, §8)
+- [x] Claude Code CLI subprocess wiring (print/non-interactive mode, no separate Anthropic API key) — `server/src/advice/claude-cli.ts` spawns `claude -p ... --output-format json`, authenticated via the machine's active Claude Code login, with tools/MCP/settings-sources all disabled (`--tools ""`, `--strict-mcp-config`, `--setting-sources ""`) and permission prompts auto-denied (`--permission-prompts none`) — the session can only produce text, never act (§10).
+- [x] Structured output format from the CLI + backend parsing/validation — `--json-schema` (CLI-side validation) + `advice/prompt.ts` (`CHAT_RESPONSE_SCHEMA`) + a runtime shape check (`isStructuredChatOutput`) in `routes/conseils.ts` before trusting the CLI's `structured_output`.
+- [x] Numeric guardrail: LLM only restates figures it received from the deterministic layer, never recomputes (§6) — `advice/guardrail.ts` extracts every number from the full JSON context handed to the LLM (Findings, Profil, patrimoine) as the "allowed" set, then flags (without blocking) any number in the response with no tolerant match — surfaced to the UI as `alerte_chiffres`.
+- [x] Risk-profile bucket override mechanism via chat under this CLI mode (§6, §12.1) — resolved as propose-then-confirm: the LLM can only *suggest* a bucket/connaissance change (`override_bucket`/`override_connaissance`/`override_raison` in its structured output, never applied automatically), the Conseils screen shows it as a card with Appliquer/Ignorer, and only an explicit "Appliquer" click calls the new `POST /api/profil/risque-override` (sets `risque_override_manuel = 1`). Chosen over silent auto-apply because an LLM proposal is exactly the kind of write a hallucination shouldn't get to make unattended.
+- [x] Confidence-indicator plumbing for the "à vérifier" fiscal points (§6, §8) — the system prompt requires restituting any `confiance: "a_verifier"` Finding used in an answer as a natural-language reserve (`reserves[]`), shown under the assistant's message; the Conseils screen's Findings list also badges each Finding "Fiable"/"À vérifier" directly.
+- [x] Conseils screen (PRD §6 "no UI surface yet" from ticket 3) — Findings list (anomalies/contexte, Entité-scoped like Dashboard/Reporting) + chat panel (whole-patrimoine context, no Entité scoping, per the ticket-04 grilling decision). Proactive trigger: the top-nav "Conseils" badge recomputes the anomaly count on every screen/Entité change (the engine is stateless and recomputes from current DB state each call, so this reflects any wealth update without a background job). "Ajuster en chat" on the Profil screen now navigates here instead of the ticket-3 placeholder toast.
 
 ---
 

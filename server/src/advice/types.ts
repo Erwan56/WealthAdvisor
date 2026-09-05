@@ -45,3 +45,22 @@ export interface ProfilRow {
   risque_connaissance: 'novice' | 'initie' | 'expert' | null;
   risque_override_manuel: 0 | 1;
 }
+
+// Chat de conseil hybride (PRD §6, §12.1, ticket 4).
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatOverrideProposal {
+  bucket: 'prudent' | 'equilibre' | 'dynamique';
+  connaissance: 'novice' | 'initie' | 'expert' | null;
+  raison: string;
+}
+
+export interface ChatResponse {
+  reponse: string;
+  reserves: string[];
+  override_propose: ChatOverrideProposal | null;
+  alerte_chiffres: number[];
+}

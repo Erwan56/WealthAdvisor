@@ -5,6 +5,7 @@ import { QuestionnaireRisque } from './QuestionnaireRisque';
 
 interface Props {
   notify: (message: string, warn?: boolean) => void;
+  onNavigateConseils: () => void;
 }
 
 const SECTIONS = [
@@ -28,7 +29,7 @@ function scrollTo(id: string) {
 
 // Écran Profil = formulaire unique avec navigation ancrée (ticket 08) — pas
 // d'onboarding obligatoire, aucune référence aux Objectifs (écran indépendant).
-export function ProfilScreen({ notify }: Props) {
+export function ProfilScreen({ notify, onNavigateConseils }: Props) {
   const [profil, setProfil] = useState<Profil | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -177,7 +178,7 @@ export function ProfilScreen({ notify }: Props) {
         </div>
       </section>
 
-      <QuestionnaireRisque profil={profil} notify={notify} onUpdated={setProfil} />
+      <QuestionnaireRisque profil={profil} notify={notify} onUpdated={setProfil} onNavigateConseils={onNavigateConseils} />
     </div>
   );
 }
