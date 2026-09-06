@@ -149,8 +149,12 @@ export function BourseDashboard({ entities, selectedEntity, notify }: Props) {
                       {isOpen && (
                         <div className="ledger-row-body">
                           <BourseLigneJournal line={line} notify={notify} onLineChanged={load} />
-                          {!line.est_compte_especes && (
-                            <div style={{ padding: '0 22px' }}>
+                          <div style={{ padding: '0 22px' }}>
+                            {line.est_compte_especes ? (
+                              <span className="muted-hint" title="Le compte espèces ne se supprime pas seul — supprimez l’Enveloppe pour le retirer.">
+                                Le compte espèces se supprime avec l’Enveloppe
+                              </span>
+                            ) : (
                               <button
                                 type="button"
                                 className="btn ghost danger small"
@@ -161,8 +165,8 @@ export function BourseDashboard({ entities, selectedEntity, notify }: Props) {
                               >
                                 Supprimer le titre
                               </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
