@@ -121,7 +121,8 @@ liquiditesRouter.delete('/lines/:id', (req, res) => {
   db.transaction(() => {
     db.prepare('DELETE FROM mouvements WHERE line_id = ?').run(lineId);
     db.prepare('DELETE FROM valorisations WHERE line_id = ?').run(lineId);
-    db.prepare('UPDATE lines SET reserve_pour_line_id = NULL WHERE id = ?').run(lineId); // no-op safeguard
+    // Detach any other Ligne that pointed to this one as its réserve.
+    db.prepare('UPDATE line_liquidites SET reserve_pour_line_id = NULL WHERE reserve_pour_line_id = ?').run(lineId);
     db.prepare('DELETE FROM line_liquidites WHERE line_id = ?').run(lineId);
     db.prepare('DELETE FROM lines WHERE id = ?').run(lineId);
   })();

@@ -71,6 +71,8 @@ entitiesRouter.delete('/:id', (req, res) => {
       }
       db.prepare('DELETE FROM mouvements WHERE line_id = ?').run(line.id);
       db.prepare('DELETE FROM valorisations WHERE line_id = ?').run(line.id);
+      // Detach any other Ligne de liquidités that pointed to this one as its réserve.
+      db.prepare('UPDATE line_liquidites SET reserve_pour_line_id = NULL WHERE reserve_pour_line_id = ?').run(line.id);
       const lineTable = LINE_DOMAIN_TABLES[line.domaine];
       if (lineTable) {
         db.prepare(`DELETE FROM ${lineTable} WHERE line_id = ?`).run(line.id);
