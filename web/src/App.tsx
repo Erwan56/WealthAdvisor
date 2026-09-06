@@ -62,6 +62,18 @@ export function App() {
     setSelectedEntity(created.id);
   };
 
+  const deleteEntity = async (entity: Entity) => {
+    if (!window.confirm(`Supprimer l'Entité « ${entity.libelle} » et tout son patrimoine ?`)) return;
+    try {
+      await api.entities.delete(entity.id);
+      notify(`Entité « ${entity.libelle} » supprimée`);
+      if (selectedEntity === entity.id) setSelectedEntity('all');
+      loadEntities();
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Erreur lors de la suppression', true);
+    }
+  };
+
   return (
     <div>
       <div className="app-header">
@@ -86,6 +98,7 @@ export function App() {
             selected={selectedEntity}
             onSelect={setSelectedEntity}
             onCreateClick={() => setShowCreateEntity(true)}
+            onDelete={deleteEntity}
           />
         )}
       </div>

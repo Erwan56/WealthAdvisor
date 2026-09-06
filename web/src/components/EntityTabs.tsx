@@ -23,9 +23,10 @@ interface Props {
   selected: number | 'all';
   onSelect: (id: number | 'all') => void;
   onCreateClick: () => void;
+  onDelete: (entity: Entity) => void;
 }
 
-export function EntityTabs({ entities, selected, onSelect, onCreateClick }: Props) {
+export function EntityTabs({ entities, selected, onSelect, onCreateClick, onDelete }: Props) {
   return (
     <div className="entity-tabs">
       <button
@@ -36,15 +37,25 @@ export function EntityTabs({ entities, selected, onSelect, onCreateClick }: Prop
         Toutes les Entités
       </button>
       {entities.map((e) => (
-        <button
-          type="button"
-          key={e.id}
-          className={`entity-tab ${selected === e.id ? 'active' : ''}`}
-          onClick={() => onSelect(e.id)}
-        >
-          <EntityAvatar entity={e} />
-          {e.libelle}
-        </button>
+        <span key={e.id} className={`entity-tab ${selected === e.id ? 'active' : ''}`}>
+          <button type="button" className="entity-tab-select" onClick={() => onSelect(e.id)}>
+            <EntityAvatar entity={e} />
+            {e.libelle}
+          </button>
+          {!e.locked && (
+            <button
+              type="button"
+              className="entity-tab-delete"
+              title="Supprimer l'Entité"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onDelete(e);
+              }}
+            >
+              ×
+            </button>
+          )}
+        </span>
       ))}
       <button type="button" className="entity-tab add" onClick={onCreateClick}>
         + Nouvelle Entité

@@ -49,6 +49,7 @@ export const api = {
     list: () => request<Entity[]>('/entities'),
     create: (data: { libelle: string; type: EntityType }) =>
       request<Entity>('/entities', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id: number) => request<void>(`/entities/${id}`, { method: 'DELETE' }),
   },
   liquidites: {
     listLines: (entityId: number | 'all') =>
