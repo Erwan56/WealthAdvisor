@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { euros, fmtDate } from '../format';
+import { estimateAccruedValue } from '../interest';
 import type { Entity, LiquiditeLine } from '../types';
 import { CreateLigneModal, type NewLigneData } from './CreateLigneModal';
 import { EntityAvatar } from './EntityTabs';
@@ -98,6 +99,14 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
                     <div className="asof">
                       {line.date_derniere_valorisation ? `au ${fmtDate(line.date_derniere_valorisation)}` : 'aucune donnée'}
                     </div>
+                    {line.taux && line.date_derniere_valorisation && (() => {
+                      const estimated =
+                        Math.round(estimateAccruedValue(line.valeur_actuelle, line.date_derniere_valorisation, line.taux) * 100) /
+                        100;
+                      return Math.abs(estimated - line.valeur_actuelle) >= 0.01 ? (
+                        <div className="asof accent">≈ {euros(estimated)} aujourd’hui</div>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="chev">›</div>
                 </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { euros, fmtDate, today } from '../format';
+import { estimateAccruedValue } from '../interest';
 import type { LiquiditeLine, Valorisation } from '../types';
 
 interface Props {
@@ -12,7 +13,11 @@ interface Props {
 export function LigneJournal({ line, notify, onLineChanged }: Props) {
   const [history, setHistory] = useState<Valorisation[] | null>(null);
   const [newDate, setNewDate] = useState(today());
-  const [newValeur, setNewValeur] = useState(String(line.valeur_actuelle));
+  const estimated =
+    line.taux && line.date_derniere_valorisation
+      ? Math.round(estimateAccruedValue(line.valeur_actuelle, line.date_derniere_valorisation, line.taux) * 100) / 100
+      : null;
+  const [newValeur, setNewValeur] = useState(String(estimated ?? line.valeur_actuelle));
   const [mouvementType, setMouvementType] = useState('versement');
   const [mouvementMontant, setMouvementMontant] = useState('');
   const [saving, setSaving] = useState(false);
@@ -98,6 +103,12 @@ export function LigneJournal({ line, notify, onLineChanged }: Props) {
             <input type="number" value={newValeur} onChange={(e) => setNewValeur(e.target.value)} />
           </div>
         </div>
+        {estimated !== null && Math.abs(estimated - line.valeur_actuelle) >= 0.01 && (
+          <div className="jn-hint">
+            Valeur pré-remplie avec l’estimation actualisée (taux {line.taux} %, au prorata depuis le{' '}
+            {fmtDate(line.date_derniere_valorisation!)}) — à ajuster si le relevé réel diffère.
+          </div>
+        )}
         <details className="disclosure">
           <summary>Associer un mouvement (versement, retrait…)</summary>
           <div className="disclosure-body">
