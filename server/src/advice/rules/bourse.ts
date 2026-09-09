@@ -13,7 +13,7 @@ interface BourseLineRow {
   libelle: string;
   valeur_actuelle: number;
   quantite: number | null;
-  pru: number | null;
+  cout_acquisition_unitaire: number | null;
   est_compte_especes: 0 | 1;
 }
 
@@ -110,11 +110,11 @@ function angleFiscal(lines: BourseLineRow[], envelopes: BourseEnvelopeRow[]): Fi
     });
   }
 
-  for (const line of lines.filter((l) => !l.est_compte_especes && l.quantite != null && l.pru != null)) {
+  for (const line of lines.filter((l) => !l.est_compte_especes && l.quantite != null && l.cout_acquisition_unitaire != null)) {
     const env = envelopes.find((e) => e.id === line.envelope_id);
     if (!env || env.type !== 'CTO') continue;
 
-    const plusValue = line.valeur_actuelle - line.quantite! * line.pru!;
+    const plusValue = line.valeur_actuelle - line.quantite! * line.cout_acquisition_unitaire!;
     findings.push({
       id: `bourse-angle-cto-${line.id}`,
       domaine: 'bourse',
@@ -122,7 +122,11 @@ function angleFiscal(lines: BourseLineRow[], envelopes: BourseEnvelopeRow[]): Fi
       entity_id: line.entity_id,
       titre: `Plus-value latente CTO — ${line.libelle}`,
       detail: `Plus-value latente avant fiscalité (flat tax 30-31,4 % en cas de cession).`,
-      chiffres: { plus_value_latente: plusValue, valeur_actuelle: line.valeur_actuelle, cout_acquisition: line.quantite! * line.pru! },
+      chiffres: {
+        plus_value_latente: plusValue,
+        valeur_actuelle: line.valeur_actuelle,
+        cout_acquisition: line.quantite! * line.cout_acquisition_unitaire!,
+      },
       confiance: 'fiable',
     });
   }
@@ -133,7 +137,7 @@ function angleFiscal(lines: BourseLineRow[], envelopes: BourseEnvelopeRow[]): Fi
 export function bourseFindings(_entities: EntityRow[]): Finding[] {
   const lines = db
     .prepare(
-      `SELECT l.id, l.entity_id, l.envelope_id, l.libelle, l.valeur_actuelle, lb.quantite, lb.pru, lb.est_compte_especes
+      `SELECT l.id, l.entity_id, l.envelope_id, l.libelle, l.valeur_actuelle, lb.quantite, lb.cout_acquisition_unitaire, lb.est_compte_especes
        FROM lines l JOIN line_bourse lb ON lb.line_id = l.id
        WHERE l.domaine = 'bourse'`
     )

@@ -92,9 +92,9 @@ export const api = {
       statut?: string;
       line: {
         libelle: string;
-        nom_isin?: string;
+        isin?: string;
         quantite?: number;
-        pru?: number;
+        cout_acquisition_unitaire?: number;
         valeur_initiale: number;
         date: string;
       };
@@ -106,11 +106,25 @@ export const api = {
     deleteEnvelope: (id: number) => request<void>(`/bourse/envelopes/${id}`, { method: 'DELETE' }),
     createLine: (
       envelopeId: number,
-      data: { libelle: string; nom_isin?: string; quantite?: number; pru?: number; valeur_initiale: number; date: string }
+      data: {
+        libelle: string;
+        isin?: string;
+        quantite?: number;
+        cout_acquisition_unitaire?: number;
+        valeur_initiale: number;
+        date: string;
+      }
     ) => request<BourseLine>(`/bourse/envelopes/${envelopeId}/lines`, { method: 'POST', body: JSON.stringify(data) }),
-    updateLine: (id: number, data: Partial<Pick<BourseLine, 'libelle' | 'note' | 'nom_isin' | 'quantite' | 'pru'>>) =>
-      request<BourseLine>(`/bourse/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    updateLine: (
+      id: number,
+      data: Partial<Pick<BourseLine, 'libelle' | 'note' | 'isin' | 'quantite' | 'cout_acquisition_unitaire'>>
+    ) => request<BourseLine>(`/bourse/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/bourse/lines/${id}`, { method: 'DELETE' }),
+    refreshCours: (entityId: number | 'all') =>
+      request<{
+        rafraichies: { line_id: number; valeur: number; date: string }[];
+        echecs: { line_id: number; reason: 'isin_non_trouve' | 'devise_non_convertible' | 'source_indisponible' }[];
+      }>('/bourse/lines/refresh-cours', { method: 'POST', body: JSON.stringify({ entity_id: entityId }) }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/bourse/lines/${lineId}/valorisations`),
     addValorisation: (
       lineId: number,

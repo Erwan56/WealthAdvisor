@@ -4,9 +4,9 @@ import type { BourseEnvelope } from '../types';
 
 export interface NewBourseLigneData {
   libelle: string;
-  nom_isin?: string;
+  isin?: string;
   quantite?: number;
-  pru?: number;
+  cout_acquisition_unitaire?: number;
   valeur_initiale: number;
   date: string;
 }
@@ -17,18 +17,26 @@ interface Props {
   onCreate: (data: NewBourseLigneData) => Promise<void>;
 }
 
+const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+const COUT_LABEL = (type: BourseEnvelope['type']) => (type === 'CTO' ? 'Prix de revient moyen pondéré' : 'Coût d’acquisition');
+
 export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) {
-  const [nomIsin, setNomIsin] = useState('');
+  const [libelle, setLibelle] = useState('');
+  const [isin, setIsin] = useState('');
   const [quantite, setQuantite] = useState('');
-  const [pru, setPru] = useState('');
+  const [coutAcquisition, setCoutAcquisition] = useState('');
   const [valeur, setValeur] = useState('');
   const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!nomIsin.trim()) {
-      setError('Nom / ISIN requis');
+    if (!libelle.trim()) {
+      setError('Titre requis');
+      return;
+    }
+    if (isin.trim() && !ISIN_RE.test(isin.trim())) {
+      setError('ISIN invalide (12 caractères : code pays + identifiant + clé)');
       return;
     }
     if (!quantite) {
@@ -39,10 +47,10 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
     setError(null);
     try {
       await onCreate({
-        libelle: nomIsin.trim(),
-        nom_isin: nomIsin.trim(),
+        libelle: libelle.trim(),
+        isin: isin.trim() || undefined,
         quantite: quantite ? Number(quantite) : undefined,
-        pru: envelope.type === 'CTO' && pru ? Number(pru) : undefined,
+        cout_acquisition_unitaire: coutAcquisition ? Number(coutAcquisition) : undefined,
         valeur_initiale: valeur ? Number(valeur) : 0,
         date,
       });
@@ -62,24 +70,37 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
         </div>
 
         <div className="field-row highlight">
-          <label>Nom / ISIN</label>
+          <label>Titre</label>
           <input
             className="field-input"
-            value={nomIsin}
-            onChange={(e) => setNomIsin(e.target.value)}
-            placeholder="ex. LVMH — FR0000121014"
+            value={libelle}
+            onChange={(e) => setLibelle(e.target.value)}
+            placeholder="ex. LVMH"
+          />
+        </div>
+        <div className="field-row">
+          <label>ISIN</label>
+          <input
+            className="field-input"
+            value={isin}
+            onChange={(e) => setIsin(e.target.value.toUpperCase())}
+            maxLength={12}
+            placeholder="ex. FR0000121014"
           />
         </div>
         <div className="field-row">
           <label>Quantité</label>
           <input className="field-input" type="number" value={quantite} onChange={(e) => setQuantite(e.target.value)} />
         </div>
-        {envelope.type === 'CTO' && (
-          <div className="field-row">
-            <label>Prix de revient moyen pondéré</label>
-            <input className="field-input" type="number" value={pru} onChange={(e) => setPru(e.target.value)} />
-          </div>
-        )}
+        <div className="field-row">
+          <label>{COUT_LABEL(envelope.type)}</label>
+          <input
+            className="field-input"
+            type="number"
+            value={coutAcquisition}
+            onChange={(e) => setCoutAcquisition(e.target.value)}
+          />
+        </div>
         <div className="field-row highlight">
           <label>Date de la valorisation</label>
           <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />

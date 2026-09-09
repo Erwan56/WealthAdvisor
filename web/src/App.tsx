@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { AvPerDashboard } from './components/AvPerDashboard';
-import { BourseDashboard } from './components/BourseDashboard';
+import { BourseDashboard, type DomainRefreshAction } from './components/BourseDashboard';
 import { ConseilsScreen } from './components/ConseilsScreen';
 import { CreateEntityPanel } from './components/CreateEntityPanel';
 import { CryptoDashboard } from './components/CryptoDashboard';
@@ -71,6 +71,11 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(readStoredScreen);
   const [showCreateEntity, setShowCreateEntity] = useState(false);
   const [anomalyCount, setAnomalyCount] = useState(0);
+  // The currently-mounted domain dashboard can register one action here to have it
+  // rendered at the dashboard-global level rather than inside its own card (generic
+  // mechanism from valorisation-bourse-temps-reel, ticket 07). Only BourseDashboard
+  // opts in today.
+  const [domainAction, setDomainAction] = useState<DomainRefreshAction | null>(null);
   const { toast, notify } = useToast();
 
   const loadEntities = () => {
@@ -147,27 +152,36 @@ export function App() {
 
       <main>
         {screen === 'dashboard' && (
-          <div className="dash-shell">
-            <DomainRail active={domain} onSelect={setDomain} />
-            {domain === 'liquidites' && (
-              <LiquiditesDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+          <>
+            {domain === 'bourse' && domainAction && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                <button type="button" className="btn primary" onClick={domainAction.onClick} disabled={domainAction.busy}>
+                  {domainAction.busy ? domainAction.busyLabel : domainAction.label}
+                </button>
+              </div>
             )}
-            {domain === 'bourse' && (
-              <BourseDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
-            )}
-            {domain === 'immobilier' && (
-              <ImmobilierDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
-            )}
-            {domain === 'av_per' && (
-              <AvPerDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
-            )}
-            {domain === 'crypto' && (
-              <CryptoDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
-            )}
-            {domain === 'pe_scpi' && (
-              <PeScpiDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
-            )}
-          </div>
+            <div className="dash-shell">
+              <DomainRail active={domain} onSelect={setDomain} />
+              {domain === 'liquidites' && (
+                <LiquiditesDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+              )}
+              {domain === 'bourse' && (
+                <BourseDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} onDomainAction={setDomainAction} />
+              )}
+              {domain === 'immobilier' && (
+                <ImmobilierDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+              )}
+              {domain === 'av_per' && (
+                <AvPerDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+              )}
+              {domain === 'crypto' && (
+                <CryptoDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+              )}
+              {domain === 'pe_scpi' && (
+                <PeScpiDashboard entities={entities} selectedEntity={selectedEntity} notify={notify} />
+              )}
+            </div>
+          </>
         )}
         {screen === 'reporting' && <ReportingDashboard entities={entities} selectedEntity={selectedEntity} />}
         {screen === 'profil' && <ProfilScreen notify={notify} onNavigateConseils={() => setScreen('conseils')} />}

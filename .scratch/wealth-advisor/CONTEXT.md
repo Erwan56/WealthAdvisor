@@ -50,8 +50,15 @@ _Avoid_: Snapshot, historique.
 **Patrimoine net**:
 La valeur d'une Ligne (ou du patrimoine total) diminuée des dettes qui s'y rattachent — pour une Ligne immobilier, valeur estimée du bien moins capital restant dû du prêt à la même date.
 
-**Prix de revient moyen pondéré**:
-Le coût d'acquisition moyen d'une Ligne boursière en CTO, dérivé des Mouvements d'achat successifs. Nécessaire pour calculer la plus ou moins-value à la vente ; n'existe pas pour les Lignes en PEA/PEA-PME, dont la fiscalité s'apprécie au niveau de l'Enveloppe et non Ligne par Ligne.
+**Coût d'acquisition unitaire** (Bourse) :
+Le coût d'acquisition moyen d'une Ligne boursière, saisi manuellement (pas dérivé des Mouvements d'achat, malgré une formulation plus ambitieuse du PRD initial — cohérent avec l'implémentation CTO déjà en place). Un seul champ, un seul usage pour toutes les Enveloppes Bourse (PEA/PEA-PME/CTO), mais deux lectures : sur CTO c'est le **Prix de revient moyen pondéré** au sens fiscal (nécessaire au calcul de la plus ou moins-value imposable à la vente — la fiscalité PEA/PEA-PME s'apprécie elle au niveau de l'Enveloppe, pas Ligne par Ligne, donc ce même champ y reste purement informational) ; sur toutes les Enveloppes il sert de base à la Plus-value latente affichée à des fins de suivi de performance. Voir [Extension du coût d'acquisition aux PEA/PEA-PME](../valorisation-bourse-temps-reel/issues/02-cout-acquisition-pea.md) et [Modèle de données — ISIN, coût d'acquisition, contrat de l'endpoint refresh](../valorisation-bourse-temps-reel/issues/06-modele-donnees-refresh.md).
+_Avoid_: Prix de revient moyen pondéré / PRU (réservé à la lecture fiscale CTO de ce même champ, pas au champ lui-même).
+
+**ISIN** (Bourse) :
+Identifiant structuré et validé (12 caractères : code pays + identifiant + chiffre de contrôle, validation de format seule) d'une Ligne boursière, remplaçant l'ancien champ texte libre « Nom / ISIN » qui mélangeait nom du titre et identifiant. Sert à interroger la source de cours externe lors du refresh. Le nom du titre reste porté séparément par `Ligne.libelle`. Voir [Champ ISIN dédié et migration](../valorisation-bourse-temps-reel/issues/03-champ-isin.md).
+
+**Plus-value latente** (Bourse) :
+`Valeur actuelle − quantité × Coût d'acquisition unitaire` d'une Ligne boursière, affichée par Ligne et agrégée par Enveloppe à des fins de suivi de performance (toutes Enveloppes) — et séparément, avant fiscalité, dans l'angle de conseil fiscal CTO (flat tax). Non calculée (affichage « — ») tant que le coût d'acquisition ou une Valorisation ne sont pas renseignés pour la Ligne. Voir [Modèle de données — ISIN, coût d'acquisition, contrat de l'endpoint refresh](../valorisation-bourse-temps-reel/issues/06-modele-donnees-refresh.md).
 
 ### Profil utilisateur
 

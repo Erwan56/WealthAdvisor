@@ -19,6 +19,7 @@ export function migrate(): void {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
   migrateObjectifsLienNullable();
+  migrateLineBourseRename();
   seed();
 }
 
@@ -47,6 +48,20 @@ function migrateObjectifsLienNullable(): void {
     INSERT INTO objectifs SELECT * FROM objectifs_old;
     DROP TABLE objectifs_old;
   `);
+}
+
+// `line_bourse.nom_isin`/`pru` are renamed to `isin`/`cout_acquisition_unitaire`
+// (valorisation-bourse-temps-reel, ticket 06) — a plain column rename, not a
+// constraint change, so a simple `RENAME COLUMN` suffices (no rebuild needed
+// unlike migrateObjectifsLienNullable above). Existing values carry over as-is.
+function migrateLineBourseRename(): void {
+  const columns = (db.prepare('PRAGMA table_info(line_bourse)').all() as { name: string }[]).map((c) => c.name);
+  if (columns.includes('nom_isin')) {
+    db.exec('ALTER TABLE line_bourse RENAME COLUMN nom_isin TO isin');
+  }
+  if (columns.includes('pru')) {
+    db.exec('ALTER TABLE line_bourse RENAME COLUMN pru TO cout_acquisition_unitaire');
+  }
 }
 
 function seed(): void {

@@ -3,6 +3,7 @@ import { api } from '../api';
 import { euros, fmtDate, pct } from '../format';
 import type { Entity, ImmobilierLine } from '../types';
 import { CreateLigneImmobilierModal, type NewImmobilierLigneData } from './CreateLigneImmobilierModal';
+import { EditLigneImmobilierModal, type EditImmobilierLigneData } from './EditLigneImmobilierModal';
 import { EntityAvatar } from './EntityTabs';
 import { ImmobilierLigneJournal } from './ImmobilierLigneJournal';
 
@@ -22,6 +23,7 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
   const [lines, setLines] = useState<ImmobilierLine[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingLine, setEditingLine] = useState<ImmobilierLine | null>(null);
 
   const load = () => {
     api.immobilier
@@ -41,6 +43,18 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
     notify('Nouveau bien ajouté');
     setShowCreate(false);
     load();
+  };
+
+  const saveLine = async (data: EditImmobilierLigneData) => {
+    if (!editingLine) return;
+    try {
+      await api.immobilier.updateLine(editingLine.id, { ...data, residence_principale: data.residence_principale ? 1 : 0 });
+      notify('Bien mis à jour');
+      setEditingLine(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
   };
 
   const deleteLine = async (line: ImmobilierLine) => {
@@ -127,7 +141,17 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
                       </div>
                     )}
                     <ImmobilierLigneJournal line={line} notify={notify} onLineChanged={load} />
-                    <div style={{ padding: '0 22px' }}>
+                    <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        className="btn ghost small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingLine(line);
+                        }}
+                      >
+                        Modifier le bien
+                      </button>
                       <button
                         type="button"
                         className="btn ghost danger small"
@@ -154,6 +178,10 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
           onCancel={() => setShowCreate(false)}
           onCreate={createLine}
         />
+      )}
+
+      {editingLine && (
+        <EditLigneImmobilierModal line={editingLine} onCancel={() => setEditingLine(null)} onSave={saveLine} />
       )}
     </div>
   );

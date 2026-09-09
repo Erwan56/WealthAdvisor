@@ -10,9 +10,9 @@ export interface NewEnveloppeData {
   statut?: string;
   line: {
     libelle: string;
-    nom_isin?: string;
+    isin?: string;
     quantite?: number;
-    pru?: number;
+    cout_acquisition_unitaire?: number;
     valeur_initiale: number;
     date: string;
   };
@@ -25,15 +25,19 @@ interface Props {
   onCreate: (data: NewEnveloppeData) => Promise<void>;
 }
 
+const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+const COUT_LABEL = (type: BourseEnvelopeType) => (type === 'CTO' ? 'Prix de revient moyen pondéré' : 'Coût d’acquisition');
+
 export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
   const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
   const [envLibelle, setEnvLibelle] = useState('');
   const [type, setType] = useState<BourseEnvelopeType>('PEA');
   const [dateOuverture, setDateOuverture] = useState('');
   const [statut, setStatut] = useState('Actif');
-  const [nomIsin, setNomIsin] = useState('');
+  const [ligneTitre, setLigneTitre] = useState('');
+  const [isin, setIsin] = useState('');
   const [quantite, setQuantite] = useState('');
-  const [pru, setPru] = useState('');
+  const [coutAcquisition, setCoutAcquisition] = useState('');
   const [valeur, setValeur] = useState('');
   const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
@@ -48,8 +52,12 @@ export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel
       setError('Libellé de l’Enveloppe requis');
       return;
     }
-    if (!nomIsin.trim()) {
-      setError('Nom / ISIN du premier titre requis');
+    if (!ligneTitre.trim()) {
+      setError('Titre du premier titre requis');
+      return;
+    }
+    if (isin.trim() && !ISIN_RE.test(isin.trim())) {
+      setError('ISIN invalide (12 caractères : code pays + identifiant + clé)');
       return;
     }
     if (!quantite) {
@@ -66,10 +74,10 @@ export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel
         date_ouverture: dateOuverture || undefined,
         statut: statut || undefined,
         line: {
-          libelle: nomIsin.trim(),
-          nom_isin: nomIsin.trim(),
+          libelle: ligneTitre.trim(),
+          isin: isin.trim() || undefined,
           quantite: quantite ? Number(quantite) : undefined,
-          pru: type === 'CTO' && pru ? Number(pru) : undefined,
+          cout_acquisition_unitaire: coutAcquisition ? Number(coutAcquisition) : undefined,
           valeur_initiale: valeur ? Number(valeur) : 0,
           date,
         },
@@ -138,24 +146,37 @@ export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel
         </div>
 
         <div className="field-row highlight">
-          <label>Premier titre — Nom / ISIN</label>
+          <label>Premier titre</label>
           <input
             className="field-input"
-            value={nomIsin}
-            onChange={(e) => setNomIsin(e.target.value)}
-            placeholder="ex. MSCI World — IE00B4X9L533"
+            value={ligneTitre}
+            onChange={(e) => setLigneTitre(e.target.value)}
+            placeholder="ex. MSCI World"
+          />
+        </div>
+        <div className="field-row">
+          <label>ISIN</label>
+          <input
+            className="field-input"
+            value={isin}
+            onChange={(e) => setIsin(e.target.value.toUpperCase())}
+            maxLength={12}
+            placeholder="ex. IE00B4X9L533"
           />
         </div>
         <div className="field-row">
           <label>Quantité</label>
           <input className="field-input" type="number" value={quantite} onChange={(e) => setQuantite(e.target.value)} />
         </div>
-        {type === 'CTO' && (
-          <div className="field-row">
-            <label>Prix de revient moyen pondéré</label>
-            <input className="field-input" type="number" value={pru} onChange={(e) => setPru(e.target.value)} />
-          </div>
-        )}
+        <div className="field-row">
+          <label>{COUT_LABEL(type)}</label>
+          <input
+            className="field-input"
+            type="number"
+            value={coutAcquisition}
+            onChange={(e) => setCoutAcquisition(e.target.value)}
+          />
+        </div>
         <div className="field-row highlight">
           <label>Date de la valorisation</label>
           <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />

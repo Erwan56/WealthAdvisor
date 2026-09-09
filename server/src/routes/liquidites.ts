@@ -86,7 +86,8 @@ liquiditesRouter.put('/lines/:id', (req, res) => {
     return res.status(404).json({ error: 'Ligne introuvable' });
   }
 
-  const { libelle, type_compte, plafond, taux, banque, reserve_pour_line_id, note } = req.body ?? {};
+  const body = req.body ?? {};
+  const { libelle, type_compte, plafond, taux, banque, reserve_pour_line_id, note } = body;
 
   db.transaction(() => {
     if (libelle !== undefined) {
@@ -95,15 +96,24 @@ liquiditesRouter.put('/lines/:id', (req, res) => {
     if (note !== undefined) {
       db.prepare('UPDATE lines SET note = ? WHERE id = ?').run(note, lineId);
     }
-    db.prepare(
-      `UPDATE line_liquidites SET
-        type_compte = COALESCE(?, type_compte),
-        plafond = ?,
-        taux = ?,
-        banque = COALESCE(?, banque),
-        reserve_pour_line_id = ?
-       WHERE line_id = ?`
-    ).run(type_compte ?? null, plafond ?? null, taux ?? null, banque ?? null, reserve_pour_line_id ?? null, lineId);
+    if (type_compte !== undefined) {
+      db.prepare('UPDATE line_liquidites SET type_compte = ? WHERE line_id = ?').run(type_compte, lineId);
+    }
+    if (plafond !== undefined) {
+      db.prepare('UPDATE line_liquidites SET plafond = ? WHERE line_id = ?').run(plafond, lineId);
+    }
+    if (taux !== undefined) {
+      db.prepare('UPDATE line_liquidites SET taux = ? WHERE line_id = ?').run(taux, lineId);
+    }
+    if (banque !== undefined) {
+      db.prepare('UPDATE line_liquidites SET banque = ? WHERE line_id = ?').run(banque, lineId);
+    }
+    if (reserve_pour_line_id !== undefined) {
+      db.prepare('UPDATE line_liquidites SET reserve_pour_line_id = ? WHERE line_id = ?').run(
+        reserve_pour_line_id,
+        lineId
+      );
+    }
   })();
 
   const updated = db.prepare(`${LINE_SELECT} AND l.id = ?`).get(lineId);

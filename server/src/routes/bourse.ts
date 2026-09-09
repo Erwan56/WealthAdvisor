@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/client.js';
 import { recomputeLineCurrentValue } from '../db/valorisations.js';
+import { CoursExterneError, resolveCoursEur, type CoursEchecRaison } from './coursExterne.js';
 
 export const bourseRouter = Router();
 
@@ -20,11 +21,17 @@ const ENVELOPE_SELECT = `
 const LINE_SELECT = `
   SELECT
     l.id, l.entity_id, l.envelope_id, l.libelle, l.valeur_actuelle, l.date_derniere_valorisation, l.note,
-    lb.nom_isin, lb.quantite, lb.pru, lb.est_compte_especes
+    lb.isin, lb.quantite, lb.cout_acquisition_unitaire, lb.est_compte_especes
   FROM lines l
   JOIN line_bourse lb ON lb.line_id = l.id
   WHERE l.domaine = 'bourse'
 `;
+
+// Format only (2 lettres pays + 9 alphanumériques + 1 chiffre de contrôle) — pas de
+// vérification du checksum ISO 6166 (ticket 06 : un ISIN au checksum faux échouera
+// silencieusement à la résolution lors du refresh, déjà couvert par le principe
+// "échec de résolution non bloquant").
+const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
 interface EnvelopeRow {
   id: number;
@@ -45,9 +52,9 @@ interface LineRow {
   valeur_actuelle: number;
   date_derniere_valorisation: string | null;
   note: string | null;
-  nom_isin: string | null;
+  isin: string | null;
   quantite: number | null;
-  pru: number | null;
+  cout_acquisition_unitaire: number | null;
   est_compte_especes: 0 | 1;
 }
 
@@ -83,22 +90,21 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) && v !== undefined && v !== null && v !== '' ? n : null;
 }
 
-// Inserts a titre Ligne (nom/ISIN + quantité, PRU gated to CTO Enveloppes) and
-// its first Valorisation. Shared by Enveloppe creation and the "add titre to
-// an existing Enveloppe" endpoint (PRD §3.2).
+// Inserts a titre Ligne (ISIN + quantité + coût d'acquisition, saisissable pour
+// toutes les Enveloppes depuis l'extension du coût d'acquisition aux PEA/PEA-PME —
+// ticket 02) and its first Valorisation. Shared by Enveloppe creation and the "add
+// titre to an existing Enveloppe" endpoint (PRD §3.2).
 function insertTitreLine(params: {
   entityId: number;
   envelopeId: number;
-  envelopeType: string;
   libelle: string;
-  nomIsin: unknown;
+  isin: unknown;
   quantite: unknown;
-  pru: unknown;
+  coutAcquisitionUnitaire: unknown;
   valeur: number;
   date: string;
 }): number {
-  const { entityId, envelopeId, envelopeType, libelle, nomIsin, quantite, pru, valeur, date } = params;
-  const finalPru = envelopeType === 'CTO' ? toNumberOrNull(pru) : null;
+  const { entityId, envelopeId, libelle, isin, quantite, coutAcquisitionUnitaire, valeur, date } = params;
 
   const info = db
     .prepare(
@@ -108,9 +114,9 @@ function insertTitreLine(params: {
     .run(entityId, envelopeId, libelle, valeur, date);
   const lineId = info.lastInsertRowid as number;
   db.prepare(
-    `INSERT INTO line_bourse (line_id, nom_isin, quantite, pru, est_compte_especes)
+    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes)
      VALUES (?, ?, ?, ?, 0)`
-  ).run(lineId, nomIsin ?? null, toNumberOrNull(quantite), finalPru);
+  ).run(lineId, isin ?? null, toNumberOrNull(quantite), toNumberOrNull(coutAcquisitionUnitaire));
   db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)').run(lineId, date, valeur);
   return lineId;
 }
@@ -125,7 +131,7 @@ function insertCashLine(entityId: number, envelopeId: number, date: string): num
     .run(entityId, envelopeId, date);
   const lineId = info.lastInsertRowid as number;
   db.prepare(
-    `INSERT INTO line_bourse (line_id, nom_isin, quantite, pru, est_compte_especes)
+    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes)
      VALUES (?, NULL, NULL, NULL, 1)`
   ).run(lineId);
   db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, 0)').run(lineId, date);
@@ -158,8 +164,8 @@ bourseRouter.post('/envelopes', (req, res) => {
   if (!line || !line.libelle || typeof line.libelle !== 'string') {
     return res.status(400).json({ error: 'line.libelle requis (premier titre de l’Enveloppe)' });
   }
-  if (!line.nom_isin || typeof line.nom_isin !== 'string') {
-    return res.status(400).json({ error: 'line.nom_isin requis' });
+  if (line.isin !== undefined && line.isin !== null && line.isin !== '' && !ISIN_RE.test(line.isin)) {
+    return res.status(400).json({ error: 'line.isin invalide (12 caractères : code pays + identifiant + clé)' });
   }
   if (toNumberOrNull(line.quantite) === null) {
     return res.status(400).json({ error: 'line.quantite requis' });
@@ -187,11 +193,10 @@ bourseRouter.post('/envelopes', (req, res) => {
     insertTitreLine({
       entityId: entity_id,
       envelopeId: envId,
-      envelopeType: type,
       libelle: line.libelle,
-      nomIsin: line.nom_isin,
+      isin: line.isin,
       quantite: line.quantite,
-      pru: line.pru,
+      coutAcquisitionUnitaire: line.cout_acquisition_unitaire,
       valeur,
       date: valDate,
     });
@@ -273,12 +278,12 @@ bourseRouter.post('/envelopes/:id/lines', (req, res) => {
     return res.status(404).json({ error: 'Enveloppe introuvable' });
   }
 
-  const { libelle, nom_isin, quantite, pru, valeur_initiale, date } = req.body ?? {};
+  const { libelle, isin, quantite, cout_acquisition_unitaire, valeur_initiale, date } = req.body ?? {};
   if (!libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'libelle requis' });
   }
-  if (!nom_isin || typeof nom_isin !== 'string') {
-    return res.status(400).json({ error: 'nom_isin requis' });
+  if (isin !== undefined && isin !== null && isin !== '' && !ISIN_RE.test(isin)) {
+    return res.status(400).json({ error: 'isin invalide (12 caractères : code pays + identifiant + clé)' });
   }
   if (toNumberOrNull(quantite) === null) {
     return res.status(400).json({ error: 'quantite requis' });
@@ -293,11 +298,10 @@ bourseRouter.post('/envelopes/:id/lines', (req, res) => {
     insertTitreLine({
       entityId,
       envelopeId: envId,
-      envelopeType: envelope.type,
       libelle,
-      nomIsin: nom_isin,
+      isin,
       quantite,
-      pru,
+      coutAcquisitionUnitaire: cout_acquisition_unitaire,
       valeur,
       date: valDate,
     })
@@ -320,9 +324,15 @@ bourseRouter.put('/lines/:id', (req, res) => {
   const meta = db.prepare('SELECT est_compte_especes FROM line_bourse WHERE line_id = ?').get(lineId) as {
     est_compte_especes: 0 | 1;
   };
-  const { libelle, note, nom_isin, quantite, pru } = req.body ?? {};
-  if (meta.est_compte_especes && (nom_isin !== undefined || quantite !== undefined || pru !== undefined)) {
-    return res.status(400).json({ error: 'Le compte espèces n’a ni nom/ISIN, ni quantité, ni PRU.' });
+  const { libelle, note, isin, quantite, cout_acquisition_unitaire } = req.body ?? {};
+  if (
+    meta.est_compte_especes &&
+    (isin !== undefined || quantite !== undefined || cout_acquisition_unitaire !== undefined)
+  ) {
+    return res.status(400).json({ error: 'Le compte espèces n’a ni ISIN, ni quantité, ni coût d’acquisition.' });
+  }
+  if (isin !== undefined && isin !== null && isin !== '' && !ISIN_RE.test(isin)) {
+    return res.status(400).json({ error: 'isin invalide (12 caractères : code pays + identifiant + clé)' });
   }
 
   db.transaction(() => {
@@ -332,18 +342,15 @@ bourseRouter.put('/lines/:id', (req, res) => {
     if (note !== undefined) {
       db.prepare('UPDATE lines SET note = ? WHERE id = ?').run(note, lineId);
     }
-    if (nom_isin !== undefined) {
-      db.prepare('UPDATE line_bourse SET nom_isin = ? WHERE line_id = ?').run(nom_isin, lineId);
+    if (isin !== undefined) {
+      db.prepare('UPDATE line_bourse SET isin = ? WHERE line_id = ?').run(isin || null, lineId);
     }
     if (quantite !== undefined) {
       db.prepare('UPDATE line_bourse SET quantite = ? WHERE line_id = ?').run(toNumberOrNull(quantite), lineId);
     }
-    if (pru !== undefined) {
-      const envelopeType = (
-        db.prepare('SELECT type FROM envelopes WHERE id = ?').get(line.envelope_id) as { type: string }
-      ).type;
-      db.prepare('UPDATE line_bourse SET pru = ? WHERE line_id = ?').run(
-        envelopeType === 'CTO' ? toNumberOrNull(pru) : null,
+    if (cout_acquisition_unitaire !== undefined) {
+      db.prepare('UPDATE line_bourse SET cout_acquisition_unitaire = ? WHERE line_id = ?').run(
+        toNumberOrNull(cout_acquisition_unitaire),
         lineId
       );
     }
@@ -471,4 +478,57 @@ bourseRouter.delete('/valorisations/:id', (req, res) => {
   })();
 
   res.status(204).end();
+});
+
+// POST /api/bourse/lines/refresh-cours — rafraîchit le cours de toutes les Lignes
+// titres (hors comptes espèces) avec un ISIN renseigné, scopées à l'Entité courante
+// du dashboard (valorisation-bourse-temps-reel, ticket 06). Boucle séquentielle (pas
+// de parallélisation agressive vis-à-vis des endpoints Yahoo non officiels) ; chaque
+// échec ne bloque que la Ligne concernée.
+bourseRouter.post('/lines/refresh-cours', async (req, res) => {
+  const entityId = req.body?.entity_id as number | 'all' | undefined;
+
+  const rows =
+    !entityId || entityId === 'all'
+      ? (db
+          .prepare(
+            `${LINE_SELECT} AND lb.est_compte_especes = 0 AND lb.isin IS NOT NULL AND lb.isin != '' ORDER BY l.id ASC`
+          )
+          .all() as LineRow[])
+      : (db
+          .prepare(
+            `${LINE_SELECT} AND lb.est_compte_especes = 0 AND lb.isin IS NOT NULL AND lb.isin != '' AND l.entity_id = ? ORDER BY l.id ASC`
+          )
+          .all(entityId) as LineRow[]);
+
+  const rafraichies: { line_id: number; valeur: number; date: string }[] = [];
+  const echecs: { line_id: number; reason: CoursEchecRaison }[] = [];
+  const fxCache = new Map<string, Promise<number>>();
+  const date = new Date().toISOString().slice(0, 10);
+
+  for (const row of rows) {
+    // Un ISIN au format invalide (notamment les valeurs héritées de l'ancien champ
+    // texte libre "Nom / ISIN", migrées telles quelles — cf. ticket 03) n'est pas
+    // envoyé à la recherche Yahoo : celle-ci est une recherche floue et peut
+    // renvoyer un titre sans rapport plutôt qu'échouer proprement.
+    if (!ISIN_RE.test(row.isin as string)) {
+      echecs.push({ line_id: row.id, reason: 'isin_non_trouve' });
+      continue;
+    }
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const { coursEur } = await resolveCoursEur(row.isin as string, fxCache);
+      const valeur = coursEur * (row.quantite ?? 0);
+      db.transaction(() => {
+        db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)').run(row.id, date, valeur);
+        recomputeLineCurrentValue(row.id);
+      })();
+      rafraichies.push({ line_id: row.id, valeur, date });
+    } catch (err) {
+      const reason = err instanceof CoursExterneError ? err.reason : 'source_indisponible';
+      echecs.push({ line_id: row.id, reason });
+    }
+  }
+
+  res.json({ rafraichies, echecs });
 });

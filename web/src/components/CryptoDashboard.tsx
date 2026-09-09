@@ -4,6 +4,8 @@ import { euros, fmtDate } from '../format';
 import type { CryptoEnvelope, CryptoLine, Entity } from '../types';
 import { CreateEnveloppeCryptoModal, type NewCryptoEnveloppeData } from './CreateEnveloppeCryptoModal';
 import { CreateLigneCryptoModal, type NewCryptoLigneData } from './CreateLigneCryptoModal';
+import { EditEnveloppeCryptoModal, type EditEnveloppeData } from './EditEnveloppeCryptoModal';
+import { EditLigneCryptoModal, type EditLigneData } from './EditLigneCryptoModal';
 import { EnveloppeLigneJournal } from './EnveloppeLigneJournal';
 import { EntityAvatar } from './EntityTabs';
 
@@ -23,6 +25,8 @@ export function CryptoDashboard({ entities, selectedEntity, notify }: Props) {
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
   const [addLigneEnvelope, setAddLigneEnvelope] = useState<CryptoEnvelope | null>(null);
+  const [editingEnvelope, setEditingEnvelope] = useState<CryptoEnvelope | null>(null);
+  const [editingLine, setEditingLine] = useState<CryptoLine | null>(null);
 
   const load = () => {
     api.crypto
@@ -49,6 +53,30 @@ export function CryptoDashboard({ entities, selectedEntity, notify }: Props) {
     notify('Actif ajouté au portefeuille');
     setAddLigneEnvelope(null);
     load();
+  };
+
+  const saveEnveloppe = async (data: EditEnveloppeData) => {
+    if (!editingEnvelope) return;
+    try {
+      await api.crypto.updateEnvelope(editingEnvelope.id, { ...data, plateforme_etrangere: data.plateforme_etrangere ? 1 : 0 });
+      notify('Portefeuille mis à jour');
+      setEditingEnvelope(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
+  };
+
+  const saveLigne = async (data: EditLigneData) => {
+    if (!editingLine) return;
+    try {
+      await api.crypto.updateLine(editingLine.id, data);
+      notify('Actif mis à jour');
+      setEditingLine(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
   };
 
   const deleteLigne = async (line: CryptoLine) => {
@@ -115,6 +143,9 @@ export function CryptoDashboard({ entities, selectedEntity, notify }: Props) {
                     <button type="button" className="btn small ghost" onClick={() => setAddLigneEnvelope(envelope)}>
                       + Actif
                     </button>
+                    <button type="button" className="btn small ghost" onClick={() => setEditingEnvelope(envelope)}>
+                      Modifier
+                    </button>
                     <button type="button" className="btn small ghost danger" onClick={() => deleteEnveloppe(envelope)}>
                       Supprimer
                     </button>
@@ -158,7 +189,17 @@ export function CryptoDashboard({ entities, selectedEntity, notify }: Props) {
                             mouvementOptions={MOUVEMENT_OPTIONS}
                             mouvementKind="quantite_prix"
                           />
-                          <div style={{ padding: '0 22px' }}>
+                          <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              className="btn ghost small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingLine(line);
+                              }}
+                            >
+                              Modifier l'actif
+                            </button>
                             <button
                               type="button"
                               className="btn ghost danger small"
@@ -196,6 +237,14 @@ export function CryptoDashboard({ entities, selectedEntity, notify }: Props) {
           onCancel={() => setAddLigneEnvelope(null)}
           onCreate={(data) => createLigne(addLigneEnvelope, data)}
         />
+      )}
+
+      {editingEnvelope && (
+        <EditEnveloppeCryptoModal envelope={editingEnvelope} onCancel={() => setEditingEnvelope(null)} onSave={saveEnveloppe} />
+      )}
+
+      {editingLine && (
+        <EditLigneCryptoModal line={editingLine} onCancel={() => setEditingLine(null)} onSave={saveLigne} />
       )}
     </div>
   );

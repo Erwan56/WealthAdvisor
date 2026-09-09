@@ -42,9 +42,9 @@ export interface BourseLine {
   valeur_actuelle: number;
   date_derniere_valorisation: string | null;
   note: string | null;
-  nom_isin: string | null;
+  isin: string | null;
   quantite: number | null;
-  pru: number | null;
+  cout_acquisition_unitaire: number | null;
   est_compte_especes: 0 | 1;
 }
 

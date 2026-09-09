@@ -4,6 +4,8 @@ import { euros, fmtDate } from '../format';
 import type { AvPerEnvelope, AvPerLine, Entity } from '../types';
 import { CreateEnveloppeAvPerModal, type NewAvPerEnveloppeData } from './CreateEnveloppeAvPerModal';
 import { CreateLigneAvPerModal, type NewAvPerLigneData } from './CreateLigneAvPerModal';
+import { EditEnveloppeAvPerModal, type EditAvPerEnveloppeData } from './EditEnveloppeAvPerModal';
+import { EditLigneAvPerModal, type EditAvPerLigneData } from './EditLigneAvPerModal';
 import { EnveloppeLigneJournal } from './EnveloppeLigneJournal';
 import { EntityAvatar } from './EntityTabs';
 
@@ -24,6 +26,8 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
   const [addLigneEnvelope, setAddLigneEnvelope] = useState<AvPerEnvelope | null>(null);
+  const [editingEnvelope, setEditingEnvelope] = useState<AvPerEnvelope | null>(null);
+  const [editingLine, setEditingLine] = useState<AvPerLine | null>(null);
 
   const load = () => {
     api.avPer
@@ -50,6 +54,30 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
     notify('Support ajouté au contrat');
     setAddLigneEnvelope(null);
     load();
+  };
+
+  const saveEnveloppe = async (data: EditAvPerEnveloppeData) => {
+    if (!editingEnvelope) return;
+    try {
+      await api.avPer.updateEnvelope(editingEnvelope.id, data);
+      notify('Contrat mis à jour');
+      setEditingEnvelope(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
+  };
+
+  const saveLigne = async (data: EditAvPerLigneData) => {
+    if (!editingLine) return;
+    try {
+      await api.avPer.updateLine(editingLine.id, data);
+      notify('Support mis à jour');
+      setEditingLine(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
   };
 
   const deleteLigne = async (line: AvPerLine) => {
@@ -115,6 +143,9 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
                     <button type="button" className="btn small ghost" onClick={() => setAddLigneEnvelope(envelope)}>
                       + Support
                     </button>
+                    <button type="button" className="btn small ghost" onClick={() => setEditingEnvelope(envelope)}>
+                      Modifier
+                    </button>
                     <button type="button" className="btn small ghost danger" onClick={() => deleteEnveloppe(envelope)}>
                       Supprimer
                     </button>
@@ -156,7 +187,17 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
                             mouvementOptions={MOUVEMENT_OPTIONS}
                             mouvementKind="montant"
                           />
-                          <div style={{ padding: '0 22px' }}>
+                          <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              className="btn ghost small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingLine(line);
+                              }}
+                            >
+                              Modifier le support
+                            </button>
                             <button
                               type="button"
                               className="btn ghost danger small"
@@ -194,6 +235,14 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
           onCancel={() => setAddLigneEnvelope(null)}
           onCreate={(data) => createLigne(addLigneEnvelope, data)}
         />
+      )}
+
+      {editingEnvelope && (
+        <EditEnveloppeAvPerModal envelope={editingEnvelope} onCancel={() => setEditingEnvelope(null)} onSave={saveEnveloppe} />
+      )}
+
+      {editingLine && (
+        <EditLigneAvPerModal line={editingLine} onCancel={() => setEditingLine(null)} onSave={saveLigne} />
       )}
     </div>
   );

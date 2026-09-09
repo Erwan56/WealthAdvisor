@@ -4,6 +4,8 @@ import { euros, fmtDate } from '../format';
 import type { Entity, PeScpiEnvelope, PeScpiLine } from '../types';
 import { CreateEnveloppePeScpiModal, type NewPeScpiEnveloppeData } from './CreateEnveloppePeScpiModal';
 import { CreateLigneScpiModal, type NewPeScpiLigneData } from './CreateLigneScpiModal';
+import { EditEnveloppePeScpiModal, type EditPeScpiEnveloppeData } from './EditEnveloppePeScpiModal';
+import { EditLigneScpiModal, type EditPeScpiLigneData } from './EditLigneScpiModal';
 import { EnveloppeLigneJournal } from './EnveloppeLigneJournal';
 import { EntityAvatar } from './EntityTabs';
 
@@ -23,6 +25,8 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
   const [addLigneEnvelope, setAddLigneEnvelope] = useState<PeScpiEnvelope | null>(null);
+  const [editingEnvelope, setEditingEnvelope] = useState<PeScpiEnvelope | null>(null);
+  const [editingLine, setEditingLine] = useState<PeScpiLine | null>(null);
 
   const load = () => {
     api.peScpi
@@ -49,6 +53,30 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
     notify('Part ajoutée au fonds');
     setAddLigneEnvelope(null);
     load();
+  };
+
+  const saveEnveloppe = async (data: EditPeScpiEnveloppeData) => {
+    if (!editingEnvelope) return;
+    try {
+      await api.peScpi.updateEnvelope(editingEnvelope.id, data);
+      notify('Fonds mis à jour');
+      setEditingEnvelope(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
+  };
+
+  const saveLigne = async (data: EditPeScpiLigneData) => {
+    if (!editingLine) return;
+    try {
+      await api.peScpi.updateLine(editingLine.id, data);
+      notify('Part mise à jour');
+      setEditingLine(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
   };
 
   const deleteLigne = async (line: PeScpiLine) => {
@@ -115,6 +143,9 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
                     <button type="button" className="btn small ghost" onClick={() => setAddLigneEnvelope(envelope)}>
                       + Part
                     </button>
+                    <button type="button" className="btn small ghost" onClick={() => setEditingEnvelope(envelope)}>
+                      Modifier
+                    </button>
                     <button type="button" className="btn small ghost danger" onClick={() => deleteEnveloppe(envelope)}>
                       Supprimer
                     </button>
@@ -156,7 +187,17 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
                             mouvementOptions={MOUVEMENT_OPTIONS}
                             mouvementKind="quantite_prix"
                           />
-                          <div style={{ padding: '0 22px' }}>
+                          <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              className="btn ghost small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingLine(line);
+                              }}
+                            >
+                              Modifier la part
+                            </button>
                             <button
                               type="button"
                               className="btn ghost danger small"
@@ -195,6 +236,12 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
           onCreate={(data) => createLigne(addLigneEnvelope, data)}
         />
       )}
+
+      {editingEnvelope && (
+        <EditEnveloppePeScpiModal envelope={editingEnvelope} onCancel={() => setEditingEnvelope(null)} onSave={saveEnveloppe} />
+      )}
+
+      {editingLine && <EditLigneScpiModal line={editingLine} onCancel={() => setEditingLine(null)} onSave={saveLigne} />}
     </div>
   );
 }

@@ -36,14 +36,14 @@ function indicateurCle(domaine: string, entityId: number | 'all'): Indicateur | 
   if (domaine === 'bourse') {
     const rows = db
       .prepare(
-        `SELECT l.valeur_actuelle, lb.quantite, lb.pru
+        `SELECT l.valeur_actuelle, lb.quantite, lb.cout_acquisition_unitaire
          FROM lines l JOIN line_bourse lb ON lb.line_id = l.id
-         WHERE l.domaine = 'bourse' AND lb.quantite IS NOT NULL AND lb.pru IS NOT NULL${ent.clause}`
+         WHERE l.domaine = 'bourse' AND lb.quantite IS NOT NULL AND lb.cout_acquisition_unitaire IS NOT NULL${ent.clause}`
       )
-      .all(...ent.params) as { valeur_actuelle: number; quantite: number; pru: number }[];
+      .all(...ent.params) as { valeur_actuelle: number; quantite: number; cout_acquisition_unitaire: number }[];
     if (rows.length === 0) return null;
-    const pv = rows.reduce((s, r) => s + (r.valeur_actuelle - r.quantite * r.pru), 0);
-    return { label: 'Plus-value latente (CTO)', value: `${pv >= 0 ? '+' : ''}${Math.round(pv).toLocaleString('fr-FR')} €` };
+    const pv = rows.reduce((s, r) => s + (r.valeur_actuelle - r.quantite * r.cout_acquisition_unitaire), 0);
+    return { label: 'Plus-value latente (titres)', value: `${pv >= 0 ? '+' : ''}${Math.round(pv).toLocaleString('fr-FR')} €` };
   }
 
   if (domaine === 'immobilier') {

@@ -4,6 +4,7 @@ import { euros, fmtDate } from '../format';
 import { estimateAccruedValue } from '../interest';
 import type { Entity, LiquiditeLine } from '../types';
 import { CreateLigneModal, type NewLigneData } from './CreateLigneModal';
+import { EditLigneModal, type EditLigneData } from './EditLigneModal';
 import { EntityAvatar } from './EntityTabs';
 import { LigneJournal } from './LigneJournal';
 
@@ -17,6 +18,7 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
   const [lines, setLines] = useState<LiquiditeLine[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingLine, setEditingLine] = useState<LiquiditeLine | null>(null);
 
   const load = () => {
     api.liquidites
@@ -36,6 +38,18 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
     notify('Nouvelle Ligne ajoutée');
     setShowCreate(false);
     load();
+  };
+
+  const saveLine = async (data: EditLigneData) => {
+    if (!editingLine) return;
+    try {
+      await api.liquidites.updateLine(editingLine.id, data);
+      notify('Ligne mise à jour');
+      setEditingLine(null);
+      load();
+    } catch (err) {
+      notify((err as Error).message, true);
+    }
   };
 
   const deleteLine = async (line: LiquiditeLine) => {
@@ -99,7 +113,7 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
                     <div className="asof">
                       {line.date_derniere_valorisation ? `au ${fmtDate(line.date_derniere_valorisation)}` : 'aucune donnée'}
                     </div>
-                    {line.taux && line.date_derniere_valorisation && (() => {
+                    {!!line.taux && line.date_derniere_valorisation && (() => {
                       const estimated =
                         Math.round(estimateAccruedValue(line.valeur_actuelle, line.date_derniere_valorisation, line.taux) * 100) /
                         100;
@@ -113,7 +127,17 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
                 {isOpen && (
                   <div className="ledger-row-body">
                     <LigneJournal line={line} notify={notify} onLineChanged={load} />
-                    <div style={{ padding: '0 22px' }}>
+                    <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        className="btn ghost small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingLine(line);
+                        }}
+                      >
+                        Modifier la Ligne
+                      </button>
                       <button
                         type="button"
                         className="btn ghost danger small"
@@ -140,6 +164,10 @@ export function LiquiditesDashboard({ entities, selectedEntity, notify }: Props)
           onCancel={() => setShowCreate(false)}
           onCreate={createLine}
         />
+      )}
+
+      {editingLine && (
+        <EditLigneModal line={editingLine} onCancel={() => setEditingLine(null)} onSave={saveLine} />
       )}
     </div>
   );

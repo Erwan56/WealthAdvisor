@@ -126,11 +126,11 @@ CREATE TABLE IF NOT EXISTS line_immobilier (
 );
 
 CREATE TABLE IF NOT EXISTS line_bourse (
-  line_id            INTEGER PRIMARY KEY REFERENCES lines(id),
-  nom_isin           TEXT,
-  quantite           REAL,
-  pru                REAL,
-  est_compte_especes INTEGER NOT NULL DEFAULT 0
+  line_id                    INTEGER PRIMARY KEY REFERENCES lines(id),
+  isin                       TEXT,
+  quantite                   REAL,
+  cout_acquisition_unitaire  REAL,
+  est_compte_especes         INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS line_av_per (
