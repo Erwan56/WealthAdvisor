@@ -14,6 +14,7 @@ import { PeScpiDashboard } from './components/PeScpiDashboard';
 import { ProfilScreen } from './components/ProfilScreen';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { useToast } from './hooks/useToast';
+import { DOMAIN_KEYS } from './types';
 import type { Entity, EntityType } from './types';
 
 type Screen = 'dashboard' | 'reporting' | 'profil' | 'objectifs' | 'conseils';
@@ -26,11 +27,48 @@ const SCREENS: { key: Screen; label: string }[] = [
   { key: 'conseils', label: 'Conseils' },
 ];
 
+// Remembers where the user was so a page refresh doesn't dump them back on the
+// default screen/domain/entity.
+const STORAGE_PREFIX = 'wealthadvisor.';
+
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Persistence is a convenience, not a requirement — ignore storage errors.
+  }
+}
+
+function readStoredScreen(): Screen {
+  const raw = safeGetItem(`${STORAGE_PREFIX}screen`);
+  return SCREENS.some((s) => s.key === raw) ? (raw as Screen) : 'dashboard';
+}
+
+function readStoredDomain(): string {
+  const raw = safeGetItem(`${STORAGE_PREFIX}domain`);
+  return raw && DOMAIN_KEYS.includes(raw) ? raw : 'liquidites';
+}
+
+function readStoredEntity(): number | 'all' {
+  const raw = safeGetItem(`${STORAGE_PREFIX}selectedEntity`);
+  if (!raw || raw === 'all') return 'all';
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : 'all';
+}
+
 export function App() {
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [selectedEntity, setSelectedEntity] = useState<number | 'all'>('all');
-  const [domain, setDomain] = useState('liquidites');
-  const [screen, setScreen] = useState<Screen>('dashboard');
+  const [selectedEntity, setSelectedEntity] = useState<number | 'all'>(readStoredEntity);
+  const [domain, setDomain] = useState(readStoredDomain);
+  const [screen, setScreen] = useState<Screen>(readStoredScreen);
   const [showCreateEntity, setShowCreateEntity] = useState(false);
   const [anomalyCount, setAnomalyCount] = useState(0);
   const { toast, notify } = useToast();
@@ -45,6 +83,10 @@ export function App() {
   };
 
   useEffect(loadEntities, []);
+
+  useEffect(() => safeSetItem(`${STORAGE_PREFIX}screen`, screen), [screen]);
+  useEffect(() => safeSetItem(`${STORAGE_PREFIX}domain`, domain), [domain]);
+  useEffect(() => safeSetItem(`${STORAGE_PREFIX}selectedEntity`, String(selectedEntity)), [selectedEntity]);
 
   // Déclenchement proactif (PRD §6) : recompte les anomalies à l'ouverture de l'app et à
   // chaque navigation — le moteur recalcule depuis l'état courant à chaque appel (pas de
