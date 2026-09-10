@@ -315,7 +315,7 @@ peScpiRouter.post('/lines/:id/valorisations', (req, res) => {
     return res.status(404).json({ error: 'Ligne introuvable' });
   }
 
-  const { date, valeur, mouvement } = req.body ?? {};
+  const { date, valeur } = req.body ?? {};
   if (!date || typeof valeur !== 'number') {
     return res.status(400).json({ error: 'date et valeur (number) requis' });
   }
@@ -324,13 +324,6 @@ peScpiRouter.post('/lines/:id/valorisations', (req, res) => {
     const info = db
       .prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)')
       .run(lineId, date, valeur);
-
-    if (mouvement && mouvement.type) {
-      db.prepare(
-        `INSERT INTO mouvements (line_id, type, date, quantite, prix_unitaire)
-         VALUES (?, ?, ?, ?, ?)`
-      ).run(lineId, mouvement.type, date, mouvement.quantite ?? null, mouvement.prix_unitaire ?? null);
-    }
 
     recomputeLineCurrentValue(lineId);
     return info.lastInsertRowid;

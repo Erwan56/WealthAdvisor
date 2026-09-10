@@ -14,11 +14,6 @@ interface Props {
   notify: (message: string, warn?: boolean) => void;
 }
 
-const MOUVEMENT_OPTIONS = [
-  { value: 'achat', label: 'Achat' },
-  { value: 'vente', label: 'Vente' },
-];
-
 export function CryptoDashboard({ entities, notify }: Props) {
   const [envelopes, setEnvelopes] = useState<CryptoEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
@@ -175,8 +170,6 @@ export function CryptoDashboard({ entities, notify }: Props) {
                             notify={notify}
                             onLineChanged={load}
                             api={api.crypto}
-                            mouvementOptions={MOUVEMENT_OPTIONS}
-                            mouvementKind="quantite_prix"
                           />
                           <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
                             <button

@@ -14,11 +14,6 @@ interface Props {
   notify: (message: string, warn?: boolean) => void;
 }
 
-const MOUVEMENT_OPTIONS = [
-  { value: 'souscription', label: 'Souscription' },
-  { value: 'rachat', label: 'Rachat' },
-];
-
 export function PeScpiDashboard({ entities, notify }: Props) {
   const [envelopes, setEnvelopes] = useState<PeScpiEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
@@ -173,8 +168,6 @@ export function PeScpiDashboard({ entities, notify }: Props) {
                             notify={notify}
                             onLineChanged={load}
                             api={api.peScpi}
-                            mouvementOptions={MOUVEMENT_OPTIONS}
-                            mouvementKind="quantite_prix"
                           />
                           <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
                             <button

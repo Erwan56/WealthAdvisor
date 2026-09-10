@@ -322,17 +322,20 @@ avPerRouter.post('/lines/:id/valorisations', (req, res) => {
     return res.status(400).json({ error: 'date et valeur (number) requis' });
   }
 
+  // Seul type de Mouvement encore saisissable (ticket 13) — rachat/arbitrage retirés,
+  // purement décoratifs comme partout ailleurs. Le choix "Oui/Non" du journal ne
+  // transmet un mouvement que lorsque l'utilisateur a répondu Oui.
   const result = db.transaction(() => {
     const info = db
       .prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)')
       .run(lineId, date, valeur);
 
-    if (mouvement && mouvement.type) {
+    if (mouvement && typeof mouvement.montant === 'number') {
       db.prepare('INSERT INTO mouvements (line_id, type, date, montant) VALUES (?, ?, ?, ?)').run(
         lineId,
-        mouvement.type,
+        'versement',
         date,
-        mouvement.montant ?? null
+        mouvement.montant
       );
     }
 

@@ -14,12 +14,6 @@ interface Props {
   notify: (message: string, warn?: boolean) => void;
 }
 
-const MOUVEMENT_OPTIONS = [
-  { value: 'versement', label: 'Versement' },
-  { value: 'rachat', label: 'Rachat' },
-  { value: 'arbitrage', label: 'Arbitrage' },
-];
-
 export function AvPerDashboard({ entities, notify }: Props) {
   const [envelopes, setEnvelopes] = useState<AvPerEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
@@ -173,8 +167,7 @@ export function AvPerDashboard({ entities, notify }: Props) {
                             notify={notify}
                             onLineChanged={load}
                             api={api.avPer}
-                            mouvementOptions={MOUVEMENT_OPTIONS}
-                            mouvementKind="montant"
+                            showVersement
                           />
                           <div style={{ padding: '0 22px', display: 'flex', gap: 8 }}>
                             <button

@@ -231,8 +231,10 @@ export const api = {
       request<AvPerLine>(`/av-per/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/av-per/lines/${id}`, { method: 'DELETE' }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/av-per/lines/${lineId}/valorisations`),
-    addValorisation: (lineId: number, data: { date: string; valeur: number; mouvement?: { type: string; montant?: number } }) =>
-      request<Valorisation>(`/av-per/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
+    addValorisation: (
+      lineId: number,
+      data: { date: string; valeur: number; mouvement?: { type: 'versement'; montant: number } }
+    ) => request<Valorisation>(`/av-per/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
     updateValorisation: (id: number, data: { date?: string; valeur?: number }) =>
       request<Valorisation>(`/av-per/valorisations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteValorisation: (id: number) => request<void>(`/av-per/valorisations/${id}`, { method: 'DELETE' }),
@@ -262,10 +264,8 @@ export const api = {
       request<CryptoLine>(`/crypto/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/crypto/lines/${id}`, { method: 'DELETE' }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/crypto/lines/${lineId}/valorisations`),
-    addValorisation: (
-      lineId: number,
-      data: { date: string; valeur: number; mouvement?: { type: string; quantite?: number; prix_unitaire?: number } }
-    ) => request<Valorisation>(`/crypto/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
+    addValorisation: (lineId: number, data: { date: string; valeur: number }) =>
+      request<Valorisation>(`/crypto/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
     updateValorisation: (id: number, data: { date?: string; valeur?: number }) =>
       request<Valorisation>(`/crypto/valorisations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteValorisation: (id: number) => request<void>(`/crypto/valorisations/${id}`, { method: 'DELETE' }),
@@ -291,10 +291,8 @@ export const api = {
       request<PeScpiLine>(`/pe-scpi/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/pe-scpi/lines/${id}`, { method: 'DELETE' }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/pe-scpi/lines/${lineId}/valorisations`),
-    addValorisation: (
-      lineId: number,
-      data: { date: string; valeur: number; mouvement?: { type: string; quantite?: number; prix_unitaire?: number } }
-    ) => request<Valorisation>(`/pe-scpi/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
+    addValorisation: (lineId: number, data: { date: string; valeur: number }) =>
+      request<Valorisation>(`/pe-scpi/lines/${lineId}/valorisations`, { method: 'POST', body: JSON.stringify(data) }),
     updateValorisation: (id: number, data: { date?: string; valeur?: number }) =>
       request<Valorisation>(`/pe-scpi/valorisations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteValorisation: (id: number) => request<void>(`/pe-scpi/valorisations/${id}`, { method: 'DELETE' }),

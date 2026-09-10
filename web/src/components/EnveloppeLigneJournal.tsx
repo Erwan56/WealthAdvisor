@@ -2,16 +2,9 @@ import { useEffect, useState } from 'react';
 import { euros, fmtDate, today } from '../format';
 import type { Valorisation } from '../types';
 
-interface MouvementOption {
-  value: string;
-  label: string;
-}
-
 interface JournalApi {
   listValorisations: (lineId: number) => Promise<Valorisation[]>;
-  // mouvement's exact shape (montant vs quantite/prix_unitaire) varies per domaine —
-  // left untyped here, EnveloppeLigneJournal only ever builds the shape matching mouvementKind.
-  addValorisation: (lineId: number, data: { date: string; valeur: number; mouvement?: any }) => Promise<Valorisation>;
+  addValorisation: (lineId: number, data: { date: string; valeur: number; mouvement?: { type: 'versement'; montant: number } }) => Promise<Valorisation>;
   updateValorisation: (id: number, data: { date?: string; valeur?: number }) => Promise<Valorisation>;
   deleteValorisation: (id: number) => Promise<void>;
 }
@@ -21,23 +14,19 @@ interface Props {
   notify: (message: string, warn?: boolean) => void;
   onLineChanged: () => void;
   api: JournalApi;
-  mouvementOptions: MouvementOption[];
-  // 'montant' pairs the mouvement with a cash amount (ex. versement AV/PER) ;
-  // 'quantite_prix' pairs it with a quantité + prix unitaire (ex. achat/vente crypto, souscription/rachat PE-SCPI).
-  mouvementKind: 'montant' | 'quantite_prix';
+  // Assurance-vie/PER est le seul Domaine où le Mouvement de saisie subsiste (ticket 13)
+  // — Crypto et PE/SCPI n'ont plus aucune UI de mouvement (ticket 12).
+  showVersement?: boolean;
 }
 
 // Reusable Valorisation journal for the Enveloppe domains (assurance-vie/PER, crypto,
-// PE/SCPI) — same Valorisation semantics as Liquidités/Bourse (PRD §3.7), only the
-// associated Mouvement's shape changes per domaine.
-export function EnveloppeLigneJournal({ line, notify, onLineChanged, api, mouvementOptions, mouvementKind }: Props) {
+// PE/SCPI) — same Valorisation semantics as Liquidités/Bourse (PRD §3.7).
+export function EnveloppeLigneJournal({ line, notify, onLineChanged, api, showVersement }: Props) {
   const [history, setHistory] = useState<Valorisation[] | null>(null);
   const [newDate, setNewDate] = useState(today());
   const [newValeur, setNewValeur] = useState(String(line.valeur_actuelle));
-  const [mouvementType, setMouvementType] = useState(mouvementOptions[0]?.value ?? '');
-  const [mouvementMontant, setMouvementMontant] = useState('');
-  const [mouvementQuantite, setMouvementQuantite] = useState('');
-  const [mouvementPrixUnitaire, setMouvementPrixUnitaire] = useState('');
+  const [versement, setVersement] = useState(true);
+  const [montant, setMontant] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -55,22 +44,20 @@ export function EnveloppeLigneJournal({ line, notify, onLineChanged, api, mouvem
       notify('Date et valeur requises', true);
       return;
     }
+    const montantNum = montant ? Number(montant) : NaN;
+    if (showVersement && versement && (!Number.isFinite(montantNum) || montantNum <= 0)) {
+      notify('Montant du versement requis (> 0)', true);
+      return;
+    }
     setSaving(true);
     try {
-      let mouvement: Record<string, unknown> | undefined;
-      if (mouvementKind === 'montant') {
-        const montant = mouvementMontant ? Number(mouvementMontant) : undefined;
-        mouvement = montant !== undefined ? { type: mouvementType, montant } : undefined;
-      } else {
-        const quantite = mouvementQuantite ? Number(mouvementQuantite) : undefined;
-        const prix_unitaire = mouvementPrixUnitaire ? Number(mouvementPrixUnitaire) : undefined;
-        mouvement = quantite !== undefined || prix_unitaire !== undefined ? { type: mouvementType, quantite, prix_unitaire } : undefined;
-      }
-      await api.addValorisation(line.id, { date: newDate, valeur, mouvement });
+      await api.addValorisation(line.id, {
+        date: newDate,
+        valeur,
+        mouvement: showVersement && versement ? { type: 'versement', montant: montantNum } : undefined,
+      });
       notify('Nouvelle entrée ajoutée au journal');
-      setMouvementMontant('');
-      setMouvementQuantite('');
-      setMouvementPrixUnitaire('');
+      setMontant('');
       load();
       onLineChanged();
     } catch (err) {
@@ -127,54 +114,30 @@ export function EnveloppeLigneJournal({ line, notify, onLineChanged, api, mouvem
             <input type="number" value={newValeur} onChange={(e) => setNewValeur(e.target.value)} />
           </div>
         </div>
-        {mouvementOptions.length > 0 && (
-          <details className="disclosure">
-            <summary>Associer un mouvement ({mouvementOptions.map((o) => o.label.toLowerCase()).join(', ')}…)</summary>
-            <div className="disclosure-body">
-              <div className="field-row">
-                <label>Type</label>
-                <select className="field-input" value={mouvementType} onChange={(e) => setMouvementType(e.target.value)}>
-                  {mouvementOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {mouvementKind === 'montant' ? (
-                <div className="field-row">
-                  <label>Montant</label>
-                  <input
-                    className="field-input"
-                    type="number"
-                    value={mouvementMontant}
-                    onChange={(e) => setMouvementMontant(e.target.value)}
-                  />
-                </div>
-              ) : (
-                <>
-                  <div className="field-row">
-                    <label>Quantité</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      value={mouvementQuantite}
-                      onChange={(e) => setMouvementQuantite(e.target.value)}
-                    />
-                  </div>
-                  <div className="field-row">
-                    <label>Prix unitaire</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      value={mouvementPrixUnitaire}
-                      onChange={(e) => setMouvementPrixUnitaire(e.target.value)}
-                    />
-                  </div>
-                </>
+        {showVersement && (
+          <div className="field-row" style={{ padding: '10px 0 0' }}>
+            <label>Versement associé à cette entrée ?</label>
+            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+                <input type="radio" checked={versement} onChange={() => setVersement(true)} />
+                Oui
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400 }}>
+                <input type="radio" checked={!versement} onChange={() => setVersement(false)} />
+                Non
+              </label>
+              {versement && (
+                <input
+                  className="field-input"
+                  type="number"
+                  placeholder="Montant"
+                  value={montant}
+                  onChange={(e) => setMontant(e.target.value)}
+                  style={{ maxWidth: 140 }}
+                />
               )}
             </div>
-          </details>
+          </div>
         )}
         <div className="btn-row" style={{ padding: '12px 0 0' }}>
           <button type="button" className="btn primary" disabled={saving} onClick={addEntry}>
