@@ -18,8 +18,6 @@ export function LigneJournal({ line, notify, onLineChanged }: Props) {
       ? Math.round(estimateAccruedValue(line.valeur_actuelle, line.date_derniere_valorisation, line.taux) * 100) / 100
       : null;
   const [newValeur, setNewValeur] = useState(String(estimated ?? line.valeur_actuelle));
-  const [mouvementType, setMouvementType] = useState('versement');
-  const [mouvementMontant, setMouvementMontant] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -39,14 +37,8 @@ export function LigneJournal({ line, notify, onLineChanged }: Props) {
     }
     setSaving(true);
     try {
-      const montant = mouvementMontant ? Number(mouvementMontant) : undefined;
-      await api.liquidites.addValorisation(line.id, {
-        date: newDate,
-        valeur,
-        mouvement: montant !== undefined ? { type: mouvementType, montant } : undefined,
-      });
+      await api.liquidites.addValorisation(line.id, { date: newDate, valeur });
       notify('Nouvelle entrée ajoutée au journal');
-      setMouvementMontant('');
       load();
       onLineChanged();
     } catch (err) {
@@ -109,27 +101,6 @@ export function LigneJournal({ line, notify, onLineChanged }: Props) {
             {fmtDate(line.date_derniere_valorisation!)}) — à ajuster si le relevé réel diffère.
           </div>
         )}
-        <details className="disclosure">
-          <summary>Associer un mouvement (versement, retrait…)</summary>
-          <div className="disclosure-body">
-            <div className="field-row">
-              <label>Type</label>
-              <select className="field-input" value={mouvementType} onChange={(e) => setMouvementType(e.target.value)}>
-                <option value="versement">Versement</option>
-                <option value="retrait">Retrait</option>
-              </select>
-            </div>
-            <div className="field-row">
-              <label>Montant</label>
-              <input
-                className="field-input"
-                type="number"
-                value={mouvementMontant}
-                onChange={(e) => setMouvementMontant(e.target.value)}
-              />
-            </div>
-          </div>
-        </details>
         <div className="btn-row" style={{ padding: '12px 0 0' }}>
           <button type="button" className="btn primary" disabled={saving} onClick={addEntry}>
             Ajouter au journal

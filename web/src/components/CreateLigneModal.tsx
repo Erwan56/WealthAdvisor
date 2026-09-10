@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
 import { today } from '../format';
-import type { Entity } from '../types';
+import type { Entity, ReferenceListItem } from '../types';
 
 export interface NewLigneData {
   entity_id: number;
@@ -22,6 +23,8 @@ interface Props {
 export function CreateLigneModal({ entities, onCancel, onCreate }: Props) {
   const [entityId, setEntityId] = useState<number | ''>('');
   const [libelle, setLibelle] = useState('');
+  const [typesCompte, setTypesCompte] = useState<ReferenceListItem[]>([]);
+  const [banques, setBanques] = useState<ReferenceListItem[]>([]);
   const [typeCompte, setTypeCompte] = useState('');
   const [plafond, setPlafond] = useState('');
   const [taux, setTaux] = useState('');
@@ -30,6 +33,11 @@ export function CreateLigneModal({ entities, onCancel, onCreate }: Props) {
   const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.typesCompte.list().then(setTypesCompte);
+    api.banques.list().then(setBanques);
+  }, []);
 
   const submit = async () => {
     if (!entityId) {
@@ -68,34 +76,46 @@ export function CreateLigneModal({ entities, onCancel, onCreate }: Props) {
           <p>Compte courant, livret… une Ligne autonome, sans Enveloppe.</p>
         </div>
 
-        {(
-          <div className="field-row">
-            <label>Entité</label>
-            <select
-              className="field-input"
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
-            >
-              <option value="">— Choisir —</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.libelle}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="field-row">
+          <label>Entité</label>
+          <select
+            className="field-input"
+            value={entityId}
+            onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— Choisir —</option>
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.libelle}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="field-row">
           <label>Libellé</label>
           <input className="field-input" value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="ex. Livret A — Boursorama" />
         </div>
         <div className="field-row">
           <label>Type de compte</label>
-          <input className="field-input" value={typeCompte} onChange={(e) => setTypeCompte(e.target.value)} placeholder="ex. Livret A, LDDS, compte courant…" />
+          <select className="field-input" value={typeCompte} onChange={(e) => setTypeCompte(e.target.value)}>
+            <option value="">— Choisir —</option>
+            {typesCompte.map((t) => (
+              <option key={t.id} value={t.libelle}>
+                {t.libelle}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field-row">
           <label>Banque</label>
-          <input className="field-input" value={banque} onChange={(e) => setBanque(e.target.value)} />
+          <select className="field-input" value={banque} onChange={(e) => setBanque(e.target.value)}>
+            <option value="">— Choisir —</option>
+            {banques.map((b) => (
+              <option key={b.id} value={b.libelle}>
+                {b.libelle}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field-row">
           <label>Plafond du livret</label>

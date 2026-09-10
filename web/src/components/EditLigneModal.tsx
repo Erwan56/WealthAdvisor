@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { LiquiditeLine } from '../types';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+import type { LiquiditeLine, ReferenceListItem } from '../types';
 
 export interface EditLigneData {
   libelle: string;
@@ -17,12 +18,19 @@ interface Props {
 
 export function EditLigneModal({ line, onCancel, onSave }: Props) {
   const [libelle, setLibelle] = useState(line.libelle);
+  const [typesCompte, setTypesCompte] = useState<ReferenceListItem[]>([]);
+  const [banques, setBanques] = useState<ReferenceListItem[]>([]);
   const [typeCompte, setTypeCompte] = useState(line.type_compte ?? '');
   const [plafond, setPlafond] = useState(line.plafond !== null ? String(line.plafond) : '');
   const [taux, setTaux] = useState(line.taux !== null ? String(line.taux) : '');
   const [banque, setBanque] = useState(line.banque ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.typesCompte.list().then(setTypesCompte);
+    api.banques.list().then(setBanques);
+  }, []);
 
   const submit = async () => {
     if (!libelle.trim()) {
@@ -34,10 +42,10 @@ export function EditLigneModal({ line, onCancel, onSave }: Props) {
     try {
       await onSave({
         libelle: libelle.trim(),
-        type_compte: typeCompte.trim() || null,
+        type_compte: typeCompte || null,
         plafond: plafond ? Number(plafond) : null,
         taux: taux ? Number(taux) : null,
-        banque: banque.trim() || null,
+        banque: banque || null,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -60,11 +68,25 @@ export function EditLigneModal({ line, onCancel, onSave }: Props) {
         </div>
         <div className="field-row">
           <label>Type de compte</label>
-          <input className="field-input" value={typeCompte} onChange={(e) => setTypeCompte(e.target.value)} placeholder="ex. Livret A, LDDS, compte courant…" />
+          <select className="field-input" value={typeCompte} onChange={(e) => setTypeCompte(e.target.value)}>
+            <option value="">— Choisir —</option>
+            {typesCompte.map((t) => (
+              <option key={t.id} value={t.libelle}>
+                {t.libelle}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field-row">
           <label>Banque</label>
-          <input className="field-input" value={banque} onChange={(e) => setBanque(e.target.value)} />
+          <select className="field-input" value={banque} onChange={(e) => setBanque(e.target.value)}>
+            <option value="">— Choisir —</option>
+            {banques.map((b) => (
+              <option key={b.id} value={b.libelle}>
+                {b.libelle}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field-row">
           <label>Plafond du livret</label>

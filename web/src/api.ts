@@ -87,10 +87,7 @@ export const api = {
       request<LiquiditeLine>(`/liquidites/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/liquidites/lines/${id}`, { method: 'DELETE' }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/liquidites/lines/${lineId}/valorisations`),
-    addValorisation: (
-      lineId: number,
-      data: { date: string; valeur: number; mouvement?: { type: string; montant?: number } }
-    ) =>
+    addValorisation: (lineId: number, data: { date: string; valeur: number }) =>
       request<Valorisation>(`/liquidites/lines/${lineId}/valorisations`, {
         method: 'POST',
         body: JSON.stringify(data),

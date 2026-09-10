@@ -10,22 +10,23 @@ interface LiquiditeLineRow {
   entity_id: number;
   libelle: string;
   valeur_actuelle: number;
-  type_compte: string | null;
+  taux: number | null;
   reserve_pour_line_id: number | null;
 }
 
-// Le modèle ne porte pas d'énumération stricte pour `type_compte` (champ libre, ex. "Livret A",
-// "LDDS", "compte courant" — cf. CreateLigneModal). Un compte courant est reconnu par
-// sous-chaîne ; tout le reste est traité comme un livret (seules ces deux natures existent
-// dans le domaine Liquidités, PRD §2.1).
-function isCompteCourant(typeCompte: string | null): boolean {
-  return !!typeCompte && /courant/i.test(typeCompte);
+// Rémunéré/non-rémunéré se lit sur `taux` (`taux > 0` ⇒ rémunéré), indépendamment du
+// libellé du Type de compte choisi — remplace l'ancienne inférence fragile par regex sur
+// le texte libre du champ (refonte-saisie-patrimoine, ticket 04). Un compte courant est
+// non-rémunéré ; un livret personnel est rémunéré — seules ces deux natures existent dans
+// le domaine Liquidités, PRD §2.1.
+function estRemunere(taux: number | null): boolean {
+  return !!taux && taux > 0;
 }
 
 function liquiditesLines(): LiquiditeLineRow[] {
   return db
     .prepare(
-      `SELECT l.id, l.entity_id, l.libelle, l.valeur_actuelle, ll.type_compte, ll.reserve_pour_line_id
+      `SELECT l.id, l.entity_id, l.libelle, l.valeur_actuelle, ll.taux, ll.reserve_pour_line_id
        FROM lines l JOIN line_liquidites ll ON ll.line_id = l.id
        WHERE l.domaine = 'liquidites'`
     )
@@ -37,7 +38,7 @@ function ruleA(lines: LiquiditeLineRow[], entities: Map<number, EntityRow>, prof
   const seuil = profil.depenses_mensuelles_courantes * (1 + RULES.liquidites.compteCourantMargeSecurite);
 
   return lines
-    .filter((l) => entities.get(l.entity_id)?.type === 'personnelle' && isCompteCourant(l.type_compte))
+    .filter((l) => entities.get(l.entity_id)?.type === 'personnelle' && !estRemunere(l.taux))
     .filter((l) => l.valeur_actuelle > seuil)
     .map((l) => ({
       id: `liquidites-compte-dormant-${l.id}`,
@@ -45,7 +46,7 @@ function ruleA(lines: LiquiditeLineRow[], entities: Map<number, EntityRow>, prof
       type: 'anomalie',
       entity_id: l.entity_id,
       titre: `Compte courant dormant — ${l.libelle}`,
-      detail: `Le solde dépasse le seuil d'1 mois de dépenses + 15 % de marge. Surplus transférable vers un livret ou une Enveloppe existante.`,
+      detail: `Le solde dépasse le seuil d'1 mois de dépenses + 15 % de marge. Surplus transférable vers un livret, un compte-titres, un contrat, un portefeuille ou un fonds existant.`,
       chiffres: {
         solde: l.valeur_actuelle,
         seuil,
@@ -59,7 +60,7 @@ function ruleA(lines: LiquiditeLineRow[], entities: Map<number, EntityRow>, prof
 function ruleB(lines: LiquiditeLineRow[], entities: Map<number, EntityRow>, profil: ProfilRow): Finding[] {
   if (!profil.depenses_mensuelles_courantes) return [];
   const livretsPerso = lines.filter(
-    (l) => entities.get(l.entity_id)?.type === 'personnelle' && !isCompteCourant(l.type_compte)
+    (l) => entities.get(l.entity_id)?.type === 'personnelle' && estRemunere(l.taux)
   );
   if (livretsPerso.length === 0) return [];
 
@@ -74,7 +75,7 @@ function ruleB(lines: LiquiditeLineRow[], entities: Map<number, EntityRow>, prof
       type: 'anomalie',
       entity_id: null,
       titre: 'Fonds de précaution au-delà de la cible',
-      detail: `Le total des livrets personnels dépasse la cible de ${profil.mois_reserve_visees} mois de dépenses. Surplus investissable ailleurs (Enveloppe existante).`,
+      detail: `Le total des livrets personnels dépasse la cible de ${profil.mois_reserve_visees} mois de dépenses. Surplus investissable ailleurs (un compte-titres, un contrat, un portefeuille ou un fonds existant).`,
       chiffres: { total_livrets: total, cible, surplus: total - cible, mois_reserve_visees: profil.mois_reserve_visees },
       confiance: 'fiable',
     },
@@ -126,7 +127,7 @@ function reserveImmobilier(lines: LiquiditeLineRow[]): Finding[] {
       type: 'contexte',
       entity_id: line.entity_id,
       titre: `Surplus investissable sur la réserve — ${line.libelle}`,
-      detail: `Réserve dédiée au bien « ${bien.libelle} » : au-delà de la cible par défaut (${RULES.liquidites.reserveImmobilierPctDefaut * 100} % de la valeur du bien/an), le surplus peut être orienté vers une Enveloppe existante — sous réserve de disponibilité rapide.`,
+      detail: `Réserve dédiée au bien « ${bien.libelle} » : au-delà de la cible par défaut (${RULES.liquidites.reserveImmobilierPctDefaut * 100} % de la valeur du bien/an), le surplus peut être orienté vers un livret, un compte-titres, un contrat, un portefeuille ou un fonds existant — sous réserve de disponibilité rapide.`,
       chiffres: {
         solde_reserve: line.valeur_actuelle,
         cible,

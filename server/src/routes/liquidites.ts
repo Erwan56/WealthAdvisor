@@ -157,7 +157,7 @@ liquiditesRouter.post('/lines/:id/valorisations', (req, res) => {
     return res.status(404).json({ error: 'Ligne introuvable' });
   }
 
-  const { date, valeur, mouvement } = req.body ?? {};
+  const { date, valeur } = req.body ?? {};
   if (!date || typeof valeur !== 'number') {
     return res.status(400).json({ error: 'date et valeur (number) requis' });
   }
@@ -168,13 +168,6 @@ liquiditesRouter.post('/lines/:id/valorisations', (req, res) => {
       date,
       valeur
     );
-
-    if (mouvement && mouvement.type) {
-      db.prepare(
-        `INSERT INTO mouvements (line_id, type, date, montant)
-         VALUES (?, ?, ?, ?)`
-      ).run(lineId, mouvement.type, date, mouvement.montant ?? null);
-    }
 
     recomputeLineCurrentValue(lineId);
     return info.lastInsertRowid;
