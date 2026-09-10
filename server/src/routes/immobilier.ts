@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/client.js';
 import { recomputeLineCurrentValue } from '../db/valorisations.js';
+import { capitalRestantDu, mensualite as calcMensualite, pretParamsFromColumns, type PretParams } from '../domain/pretImmobilier.js';
 
 export const immobilierRouter = Router();
 
@@ -11,6 +12,7 @@ const LINE_SELECT = `
   SELECT
     l.id, l.entity_id, l.libelle, l.valeur_actuelle, l.date_derniere_valorisation, l.note,
     li.prix_acquisition_total, li.date_acquisition, li.residence_principale, li.regime_location,
+    li.capital_emprunte_initial, li.taux_annuel, li.duree_mois, li.date_depart,
     e.libelle AS entity_libelle, e.type AS entity_type,
     vi.capital_restant_du, vi.loyer, vi.charges, vi.taxe_fonciere, vi.assurance, vi.frais_gestion, vi.mensualite
   FROM lines l
@@ -33,6 +35,10 @@ interface LineRow {
   date_acquisition: string | null;
   residence_principale: 0 | 1;
   regime_location: string | null;
+  capital_emprunte_initial: number | null;
+  taux_annuel: number | null;
+  duree_mois: number | null;
+  date_depart: string | null;
   entity_libelle: string;
   entity_type: string;
   capital_restant_du: number | null;
@@ -42,6 +48,21 @@ interface LineRow {
   assurance: number | null;
   frais_gestion: number | null;
   mensualite: number | null;
+}
+
+const pretParamsOf = pretParamsFromColumns;
+
+// Dès qu'un Prêt est configuré sur la Ligne, capital restant dû et mensualité sont
+// calculés à la volée depuis ses 4 champs — jamais lus depuis ce qui est stocké par
+// Valorisation (ticket 10). `atDate` : la date à laquelle évaluer le capital restant
+// dû (la Valorisation elle-même pour l'historique, aujourd'hui pour l'état courant).
+function withPret<T extends { capital_restant_du: number | null; mensualite: number | null }>(
+  row: T,
+  pret: PretParams | null,
+  atDate: string
+): T {
+  if (!pret) return row;
+  return { ...row, capital_restant_du: capitalRestantDu(pret, atDate), mensualite: calcMensualite(pret) };
 }
 
 function toNumberOrNull(v: unknown): number | null {
@@ -82,7 +103,8 @@ immobilierRouter.get('/lines', (req, res) => {
       ? (db.prepare(`${LINE_SELECT} ORDER BY l.libelle ASC`).all() as LineRow[])
       : (db.prepare(`${LINE_SELECT} AND l.entity_id = ? ORDER BY l.libelle ASC`).all(Number(entityId)) as LineRow[]);
 
-  res.json(rows.map(withDerived));
+  const today = new Date().toISOString().slice(0, 10);
+  res.json(rows.map((row) => withDerived(withPret(row, pretParamsOf(row), today))));
 });
 
 // POST /api/immobilier/lines
@@ -94,6 +116,10 @@ immobilierRouter.post('/lines', (req, res) => {
     date_acquisition,
     residence_principale,
     regime_location,
+    capital_emprunte_initial,
+    taux_annuel,
+    duree_mois,
+    date_depart,
     valeur_initiale,
     date,
     capital_restant_du,
@@ -127,14 +153,20 @@ immobilierRouter.post('/lines', (req, res) => {
     const lineId = lineInfo.lastInsertRowid as number;
 
     db.prepare(
-      `INSERT INTO line_immobilier (line_id, prix_acquisition_total, date_acquisition, residence_principale, regime_location)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO line_immobilier
+         (line_id, prix_acquisition_total, date_acquisition, residence_principale, regime_location,
+          capital_emprunte_initial, taux_annuel, duree_mois, date_depart)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       lineId,
       toNumberOrNull(prix_acquisition_total),
       date_acquisition ?? null,
       residence_principale ? 1 : 0,
-      regime_location ?? null
+      regime_location ?? null,
+      toNumberOrNull(capital_emprunte_initial),
+      toNumberOrNull(taux_annuel),
+      toNumberOrNull(duree_mois),
+      date_depart ?? null
     );
 
     const valInfo = db
@@ -158,7 +190,8 @@ immobilierRouter.post('/lines', (req, res) => {
   })();
 
   const created = db.prepare(`${LINE_SELECT} AND l.id = ?`).get(result) as LineRow;
-  res.status(201).json(withDerived(created));
+  const today = new Date().toISOString().slice(0, 10);
+  res.status(201).json(withDerived(withPret(created, pretParamsOf(created), today)));
 });
 
 // PUT /api/immobilier/lines/:id
@@ -169,8 +202,18 @@ immobilierRouter.put('/lines/:id', (req, res) => {
     return res.status(404).json({ error: 'Ligne introuvable' });
   }
 
-  const { libelle, note, prix_acquisition_total, date_acquisition, residence_principale, regime_location } =
-    req.body ?? {};
+  const {
+    libelle,
+    note,
+    prix_acquisition_total,
+    date_acquisition,
+    residence_principale,
+    regime_location,
+    capital_emprunte_initial,
+    taux_annuel,
+    duree_mois,
+    date_depart,
+  } = req.body ?? {};
 
   db.transaction(() => {
     if (libelle !== undefined) {
@@ -197,10 +240,26 @@ immobilierRouter.put('/lines/:id', (req, res) => {
     if (regime_location !== undefined) {
       db.prepare('UPDATE line_immobilier SET regime_location = ? WHERE line_id = ?').run(regime_location, lineId);
     }
+    if (capital_emprunte_initial !== undefined) {
+      db.prepare('UPDATE line_immobilier SET capital_emprunte_initial = ? WHERE line_id = ?').run(
+        toNumberOrNull(capital_emprunte_initial),
+        lineId
+      );
+    }
+    if (taux_annuel !== undefined) {
+      db.prepare('UPDATE line_immobilier SET taux_annuel = ? WHERE line_id = ?').run(toNumberOrNull(taux_annuel), lineId);
+    }
+    if (duree_mois !== undefined) {
+      db.prepare('UPDATE line_immobilier SET duree_mois = ? WHERE line_id = ?').run(toNumberOrNull(duree_mois), lineId);
+    }
+    if (date_depart !== undefined) {
+      db.prepare('UPDATE line_immobilier SET date_depart = ? WHERE line_id = ?').run(date_depart || null, lineId);
+    }
   })();
 
   const updated = db.prepare(`${LINE_SELECT} AND l.id = ?`).get(lineId) as LineRow;
-  res.json(withDerived(updated));
+  const today = new Date().toISOString().slice(0, 10);
+  res.json(withDerived(withPret(updated, pretParamsOf(updated), today)));
 });
 
 // DELETE /api/immobilier/lines/:id
@@ -239,8 +298,18 @@ immobilierRouter.get('/lines/:id/valorisations', (req, res) => {
        WHERE v.line_id = ?
        ORDER BY v.date ASC, v.id ASC`
     )
-    .all(lineId);
-  res.json(rows);
+    .all(lineId) as { id: number; date: string; valeur: number; capital_restant_du: number | null; mensualite: number | null }[];
+
+  const line = db
+    .prepare(
+      'SELECT capital_emprunte_initial, taux_annuel, duree_mois, date_depart FROM line_immobilier WHERE line_id = ?'
+    )
+    .get(lineId) as
+    | { capital_emprunte_initial: number | null; taux_annuel: number | null; duree_mois: number | null; date_depart: string | null }
+    | undefined;
+  const pret = line ? pretParamsOf(line) : null;
+
+  res.json(rows.map((row) => withPret(row, pret, row.date)));
 });
 
 // POST /api/immobilier/lines/:id/valorisations

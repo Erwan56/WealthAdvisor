@@ -7,6 +7,10 @@ export interface EditImmobilierLigneData {
   date_acquisition?: string | null;
   residence_principale: boolean;
   regime_location?: string | null;
+  capital_emprunte_initial?: number | null;
+  taux_annuel?: number | null;
+  duree_mois?: number | null;
+  date_depart?: string | null;
 }
 
 interface Props {
@@ -23,6 +27,12 @@ export function EditLigneImmobilierModal({ line, onCancel, onSave }: Props) {
   const [dateAcquisition, setDateAcquisition] = useState(line.date_acquisition ?? '');
   const [residencePrincipale, setResidencePrincipale] = useState(!!line.residence_principale);
   const [regimeLocation, setRegimeLocation] = useState(line.regime_location ?? '');
+  const [capitalEmprunte, setCapitalEmprunte] = useState(
+    line.capital_emprunte_initial !== null ? String(line.capital_emprunte_initial) : ''
+  );
+  const [tauxAnnuel, setTauxAnnuel] = useState(line.taux_annuel !== null ? String(line.taux_annuel) : '');
+  const [dureeMois, setDureeMois] = useState(line.duree_mois !== null ? String(line.duree_mois) : '');
+  const [dateDepart, setDateDepart] = useState(line.date_depart ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +50,10 @@ export function EditLigneImmobilierModal({ line, onCancel, onSave }: Props) {
         date_acquisition: dateAcquisition || null,
         residence_principale: residencePrincipale,
         regime_location: residencePrincipale ? null : regimeLocation || null,
+        capital_emprunte_initial: capitalEmprunte ? Number(capitalEmprunte) : null,
+        taux_annuel: tauxAnnuel ? Number(tauxAnnuel) : null,
+        duree_mois: dureeMois ? Number(dureeMois) : null,
+        date_depart: dateDepart || null,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -96,6 +110,28 @@ export function EditLigneImmobilierModal({ line, onCancel, onSave }: Props) {
             </select>
           </div>
         )}
+
+        <details className="disclosure" open={!!(capitalEmprunte || tauxAnnuel || dureeMois || dateDepart)}>
+          <summary>Prêt immobilier (optionnel)</summary>
+          <div className="disclosure-body">
+            <div className="field-row">
+              <label>Capital emprunté initial</label>
+              <input className="field-input" type="number" value={capitalEmprunte} onChange={(e) => setCapitalEmprunte(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Taux annuel (%)</label>
+              <input className="field-input" type="number" step="0.01" value={tauxAnnuel} onChange={(e) => setTauxAnnuel(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Durée (mois)</label>
+              <input className="field-input" type="number" value={dureeMois} onChange={(e) => setDureeMois(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Date de départ</label>
+              <input className="field-input" type="date" value={dateDepart} onChange={(e) => setDateDepart(e.target.value)} />
+            </div>
+          </div>
+        </details>
 
         {error && <div className="error-banner" style={{ margin: '0 22px 12px' }}>{error}</div>}
 

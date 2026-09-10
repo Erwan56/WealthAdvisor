@@ -152,6 +152,10 @@ export const api = {
       date_acquisition?: string;
       residence_principale?: boolean;
       regime_location?: string;
+      capital_emprunte_initial?: number;
+      taux_annuel?: number;
+      duree_mois?: number;
+      date_depart?: string;
       valeur_initiale: number;
       date: string;
       capital_restant_du?: number;
@@ -167,7 +171,16 @@ export const api = {
       data: Partial<
         Pick<
           ImmobilierLine,
-          'libelle' | 'note' | 'prix_acquisition_total' | 'date_acquisition' | 'residence_principale' | 'regime_location'
+          | 'libelle'
+          | 'note'
+          | 'prix_acquisition_total'
+          | 'date_acquisition'
+          | 'residence_principale'
+          | 'regime_location'
+          | 'capital_emprunte_initial'
+          | 'taux_annuel'
+          | 'duree_mois'
+          | 'date_depart'
         >
       >
     ) => request<ImmobilierLine>(`/immobilier/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

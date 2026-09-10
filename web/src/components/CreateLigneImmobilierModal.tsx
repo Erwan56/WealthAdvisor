@@ -9,6 +9,10 @@ export interface NewImmobilierLigneData {
   date_acquisition?: string;
   residence_principale?: boolean;
   regime_location?: string;
+  capital_emprunte_initial?: number;
+  taux_annuel?: number;
+  duree_mois?: number;
+  date_depart?: string;
   valeur_initiale: number;
   date: string;
   capital_restant_du?: number;
@@ -33,6 +37,10 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
   const [dateAcquisition, setDateAcquisition] = useState('');
   const [residencePrincipale, setResidencePrincipale] = useState(false);
   const [regimeLocation, setRegimeLocation] = useState('');
+  const [capitalEmprunte, setCapitalEmprunte] = useState('');
+  const [tauxAnnuel, setTauxAnnuel] = useState('');
+  const [dureeMois, setDureeMois] = useState('');
+  const [dateDepart, setDateDepart] = useState('');
   const [valeur, setValeur] = useState('');
   const [date, setDate] = useState(today());
   const [capitalRestantDu, setCapitalRestantDu] = useState('');
@@ -44,6 +52,8 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
   const [mensualite, setMensualite] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pretEnCours = !!(capitalEmprunte || tauxAnnuel || dureeMois || dateDepart);
 
   const submit = async () => {
     if (!entityId) {
@@ -64,15 +74,19 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
         date_acquisition: dateAcquisition || undefined,
         residence_principale: residencePrincipale,
         regime_location: residencePrincipale ? undefined : regimeLocation || undefined,
+        capital_emprunte_initial: capitalEmprunte ? Number(capitalEmprunte) : undefined,
+        taux_annuel: tauxAnnuel ? Number(tauxAnnuel) : undefined,
+        duree_mois: dureeMois ? Number(dureeMois) : undefined,
+        date_depart: dateDepart || undefined,
         valeur_initiale: valeur ? Number(valeur) : 0,
         date,
-        capital_restant_du: capitalRestantDu ? Number(capitalRestantDu) : undefined,
+        capital_restant_du: !pretEnCours && capitalRestantDu ? Number(capitalRestantDu) : undefined,
         loyer: loyer ? Number(loyer) : undefined,
         charges: charges ? Number(charges) : undefined,
         taxe_fonciere: taxeFonciere ? Number(taxeFonciere) : undefined,
         assurance: assurance ? Number(assurance) : undefined,
         frais_gestion: fraisGestion ? Number(fraisGestion) : undefined,
-        mensualite: mensualite ? Number(mensualite) : undefined,
+        mensualite: !pretEnCours && mensualite ? Number(mensualite) : undefined,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -89,23 +103,21 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
           <p>Une Ligne autonome, sans Enveloppe.</p>
         </div>
 
-        {(
-          <div className="field-row">
-            <label>Entité</label>
-            <select
-              className="field-input"
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
-            >
-              <option value="">— Choisir —</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.libelle}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="field-row">
+          <label>Entité</label>
+          <select
+            className="field-input"
+            value={entityId}
+            onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— Choisir —</option>
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.libelle}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="field-row">
           <label>Libellé</label>
           <input className="field-input" value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="ex. Appartement — Lyon 7e" />
@@ -141,6 +153,28 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
           </div>
         )}
 
+        <details className="disclosure">
+          <summary>Prêt immobilier (optionnel)</summary>
+          <div className="disclosure-body">
+            <div className="field-row">
+              <label>Capital emprunté initial</label>
+              <input className="field-input" type="number" value={capitalEmprunte} onChange={(e) => setCapitalEmprunte(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Taux annuel (%)</label>
+              <input className="field-input" type="number" step="0.01" value={tauxAnnuel} onChange={(e) => setTauxAnnuel(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Durée (mois)</label>
+              <input className="field-input" type="number" value={dureeMois} onChange={(e) => setDureeMois(e.target.value)} />
+            </div>
+            <div className="field-row">
+              <label>Date de départ</label>
+              <input className="field-input" type="date" value={dateDepart} onChange={(e) => setDateDepart(e.target.value)} />
+            </div>
+          </div>
+        </details>
+
         <div className="field-row highlight">
           <label>Date de la valorisation</label>
           <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -151,16 +185,25 @@ export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Pro
         </div>
 
         <details className="disclosure">
-          <summary>Paramètres locatifs courants (prêt, loyer…)</summary>
+          <summary>Paramètres locatifs courants (loyer…)</summary>
           <div className="disclosure-body">
-            <div className="field-row">
-              <label>Capital restant dû</label>
-              <input className="field-input" type="number" value={capitalRestantDu} onChange={(e) => setCapitalRestantDu(e.target.value)} />
-            </div>
-            <div className="field-row">
-              <label>Mensualité de prêt</label>
-              <input className="field-input" type="number" value={mensualite} onChange={(e) => setMensualite(e.target.value)} />
-            </div>
+            {pretEnCours ? (
+              <div className="jn-hint">
+                Capital restant dû et mensualité seront calculés automatiquement depuis le Prêt immobilier configuré
+                ci-dessus.
+              </div>
+            ) : (
+              <>
+                <div className="field-row">
+                  <label>Capital restant dû</label>
+                  <input className="field-input" type="number" value={capitalRestantDu} onChange={(e) => setCapitalRestantDu(e.target.value)} />
+                </div>
+                <div className="field-row">
+                  <label>Mensualité de prêt</label>
+                  <input className="field-input" type="number" value={mensualite} onChange={(e) => setMensualite(e.target.value)} />
+                </div>
+              </>
+            )}
             <div className="field-row">
               <label>Loyer mensuel</label>
               <input className="field-input" type="number" value={loyer} onChange={(e) => setLoyer(e.target.value)} />

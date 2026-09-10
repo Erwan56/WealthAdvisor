@@ -2,6 +2,7 @@
 // (déclencheur de l'angle vendre/garder), proximité du seuil IFI.
 
 import { db } from '../../db/client.js';
+import { capitalRestantDu, dateFinPret, pretParamsFromColumns, type PretParams } from '../../domain/pretImmobilier.js';
 import { deadlineStatus, yearsBetween } from '../dates.js';
 import { FISCAL } from '../fiscal-constants.js';
 import { RULES } from '../rule-constants.js';
@@ -15,6 +16,10 @@ interface ImmobilierLineRow {
   prix_acquisition_total: number | null;
   date_acquisition: string | null;
   residence_principale: 0 | 1;
+  capital_emprunte_initial: number | null;
+  taux_annuel: number | null;
+  duree_mois: number | null;
+  date_depart: string | null;
   capital_restant_du: number | null;
   loyer: number | null;
   charges: number | null;
@@ -24,12 +29,17 @@ interface ImmobilierLineRow {
   mensualite: number | null;
 }
 
-function currentLines(): ImmobilierLineRow[] {
-  return db
+// Dès qu'un Prêt est configuré, `capital_restant_du` est recalculé à la volée à
+// aujourd'hui plutôt que lu depuis la dernière Valorisation stockée (ticket 10) — même
+// principe que `withPret` côté routes/immobilier.ts, dupliqué ici car les règles lisent
+// la base directement plutôt que de passer par l'API.
+function currentLines(): (ImmobilierLineRow & { pret: PretParams | null })[] {
+  const rows = db
     .prepare(
       `SELECT
         l.id, l.entity_id, l.libelle, l.valeur_actuelle,
         li.prix_acquisition_total, li.date_acquisition, li.residence_principale,
+        li.capital_emprunte_initial, li.taux_annuel, li.duree_mois, li.date_depart,
         vi.capital_restant_du, vi.loyer, vi.charges, vi.taxe_fonciere, vi.assurance, vi.frais_gestion, vi.mensualite
        FROM lines l
        JOIN line_immobilier li ON li.line_id = l.id
@@ -38,11 +48,19 @@ function currentLines(): ImmobilierLineRow[] {
        WHERE l.domaine = 'immobilier'`
     )
     .all() as ImmobilierLineRow[];
+
+  const today = new Date().toISOString().slice(0, 10);
+  return rows.map((row) => {
+    const pret = pretParamsFromColumns(row);
+    return pret ? { ...row, capital_restant_du: capitalRestantDu(pret, today), pret } : { ...row, pret };
+  });
 }
+
+type Row = ImmobilierLineRow & { pret: PretParams | null };
 
 // Convention (server/src/routes/immobilier.ts `withDerived`) : loyer/charges/assurance/
 // frais_gestion/mensualité sont mensuels, taxe foncière est annuelle.
-function rendementNet(row: ImmobilierLineRow): number | null {
+function rendementNet(row: Row): number | null {
   if (row.loyer == null || !row.prix_acquisition_total) return null;
   const loyerAnnuel = row.loyer * 12;
   const chargesAnnuelles =
@@ -50,7 +68,7 @@ function rendementNet(row: ImmobilierLineRow): number | null {
   return ((loyerAnnuel - chargesAnnuelles) / row.prix_acquisition_total) * 100;
 }
 
-function cashFlowMensuel(row: ImmobilierLineRow): number | null {
+function cashFlowMensuel(row: Row): number | null {
   if (row.loyer == null) return null;
   return (
     row.loyer -
@@ -62,7 +80,7 @@ function cashFlowMensuel(row: ImmobilierLineRow): number | null {
   );
 }
 
-function rentabiliteAnormale(rows: ImmobilierLineRow[]): Finding[] {
+function rentabiliteAnormale(rows: Row[]): Finding[] {
   const findings: Finding[] = [];
   for (const row of rows.filter((r) => r.loyer != null)) {
     const net = rendementNet(row);
@@ -119,10 +137,12 @@ function estimateLoanPayoffDate(lineId: number): Date | null {
   return new Date(new Date(last.date).getTime() + daysNeeded * 86_400_000);
 }
 
-function pretBientotSolde(rows: ImmobilierLineRow[]): Finding[] {
+function pretBientotSolde(rows: Row[]): Finding[] {
   const findings: Finding[] = [];
   for (const row of rows.filter((r) => r.capital_restant_du != null && r.capital_restant_du > 0)) {
-    const payoff = estimateLoanPayoffDate(row.id);
+    // Date de fin exacte pour une Ligne avec Prêt configuré (ticket 10) ; la projection
+    // par tendance linéaire reste le seul recours pour une Ligne sans Prêt.
+    const payoff = row.pret ? dateFinPret(row.pret) : estimateLoanPayoffDate(row.id);
     if (!payoff) continue;
     const status = deadlineStatus(payoff, RULES.immobilier.pretSoldeAlerteMoisAvant);
     if (!status) continue;
@@ -142,7 +162,9 @@ function pretBientotSolde(rows: ImmobilierLineRow[]): Finding[] {
       type: 'contexte',
       entity_id: row.entity_id,
       titre: `Prêt ${status === 'imminent' ? 'bientôt soldé' : 'soldé'} — ${row.libelle}`,
-      detail: `Échéance estimée du prêt (projection linéaire du capital restant dû). Point d'entrée pour l'angle vendre/garder.`,
+      detail: row.pret
+        ? `Échéance exacte du Prêt configuré (date de départ + durée). Point d'entrée pour l'angle vendre/garder.`
+        : `Échéance estimée du prêt (projection linéaire du capital restant dû). Point d'entrée pour l'angle vendre/garder.`,
       chiffres: {
         echeance_estimee: payoff.toISOString().slice(0, 10),
         rendement_net_pct: net,
@@ -158,7 +180,7 @@ function pretBientotSolde(rows: ImmobilierLineRow[]): Finding[] {
   return findings;
 }
 
-function seuilIfi(rows: ImmobilierLineRow[]): Finding[] {
+function seuilIfi(rows: Row[]): Finding[] {
   let netTotal = 0;
   for (const row of rows) {
     const brut = row.valeur_actuelle - (row.capital_restant_du ?? 0);
