@@ -7,11 +7,10 @@ import { CreateLigneScpiModal, type NewPeScpiLigneData } from './CreateLigneScpi
 import { EditEnveloppePeScpiModal, type EditPeScpiEnveloppeData } from './EditEnveloppePeScpiModal';
 import { EditLigneScpiModal, type EditPeScpiLigneData } from './EditLigneScpiModal';
 import { EnveloppeLigneJournal } from './EnveloppeLigneJournal';
-import { EntityAvatar } from './EntityTabs';
+import { EntityAvatar } from './EntityAvatar';
 
 interface Props {
   entities: Entity[];
-  selectedEntity: number | 'all';
   notify: (message: string, warn?: boolean) => void;
 }
 
@@ -20,7 +19,7 @@ const MOUVEMENT_OPTIONS = [
   { value: 'rachat', label: 'Rachat' },
 ];
 
-export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
+export function PeScpiDashboard({ entities, notify }: Props) {
   const [envelopes, setEnvelopes] = useState<PeScpiEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
@@ -30,16 +29,12 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
 
   const load = () => {
     api.peScpi
-      .listEnvelopes(selectedEntity)
+      .listEnvelopes('all')
       .then(setEnvelopes)
       .catch(() => notify('Erreur de chargement des fonds', true));
   };
 
-  useEffect(() => {
-    setOpenLineId(null);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEntity]);
+  useEffect(load, []);
 
   const createEnveloppe = async (data: NewPeScpiEnveloppeData) => {
     await api.peScpi.createEnvelope(data);
@@ -103,21 +98,13 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
     }
   };
 
-  const title = selectedEntity === 'all' ? 'Private equity / SCPI — Toutes les Entités' : 'Private equity / SCPI';
-  const currentEntity = selectedEntity === 'all' ? null : entities.find((e) => e.id === selectedEntity) ?? null;
-  const showEntity = selectedEntity === 'all';
-
   return (
     <div className="dash-main">
       <div className="dash-toolbar">
-        <h2>{currentEntity ? `${title} — ${currentEntity.libelle}` : title}</h2>
-        {selectedEntity === 'all' ? (
-          <span className="muted-hint">Choisissez une Entité pour ajouter un fonds</span>
-        ) : (
-          <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
-            + Ajouter
-          </button>
-        )}
+        <h2>Private equity / SCPI</h2>
+        <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
+          + Ajouter
+        </button>
       </div>
 
       <div className="card">
@@ -136,7 +123,7 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
                     {envelope.duree_blocage != null ? ` · blocage ${envelope.duree_blocage} ans` : ''}
                     {envelope.date_ouverture ? ` · ouvert ${fmtDate(envelope.date_ouverture)}` : ''}
                     {envelope.statut ? ` · ${envelope.statut}` : ''}
-                    {showEntity && entity ? ` · ${entity.libelle}` : ''}
+                    {entity ? ` · ${entity.libelle}` : ''}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="mono">{euros(envelope.valeur_totale)}</span>
@@ -155,15 +142,12 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
                   const isOpen = openLineId === line.id;
                   return (
                     <div className={`ledger-row ${isOpen ? 'open' : ''}`} key={line.id}>
-                      <div
-                        className={`ledger-row-head ${showEntity ? 'with-entity' : ''}`}
-                        onClick={() => setOpenLineId(isOpen ? null : line.id)}
-                      >
+                      <div className="ledger-row-head with-entity" onClick={() => setOpenLineId(isOpen ? null : line.id)}>
                         <div>
                           <div className="name">{line.libelle}</div>
                           <div className="sub">{line.nombre_parts != null ? `${line.nombre_parts} part(s)` : '—'}</div>
                         </div>
-                        {showEntity && entity && (
+                        {entity && (
                           <div className="ent-cell">
                             <EntityAvatar entity={entity} small />
                             <span>{entity.libelle}</span>
@@ -221,12 +205,7 @@ export function PeScpiDashboard({ entities, selectedEntity, notify }: Props) {
       </div>
 
       {showCreateEnveloppe && (
-        <CreateEnveloppePeScpiModal
-          entities={entities}
-          defaultEntityId={selectedEntity}
-          onCancel={() => setShowCreateEnveloppe(false)}
-          onCreate={createEnveloppe}
-        />
+        <CreateEnveloppePeScpiModal entities={entities} onCancel={() => setShowCreateEnveloppe(false)} onCreate={createEnveloppe} />
       )}
 
       {addLigneEnvelope && (

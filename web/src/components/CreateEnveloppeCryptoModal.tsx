@@ -14,13 +14,12 @@ export interface NewCryptoEnveloppeData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewCryptoEnveloppeData) => Promise<void>;
 }
 
-export function CreateEnveloppeCryptoModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [envLibelle, setEnvLibelle] = useState('');
   const [plateformeEtrangere, setPlateformeEtrangere] = useState(false);
   const [prixAcquisitionCumule, setPrixAcquisitionCumule] = useState('');
@@ -83,7 +82,7 @@ export function CreateEnveloppeCryptoModal({ entities, defaultEntityId, onCancel
           <p>Un portefeuille par plateforme, avec son premier actif.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select

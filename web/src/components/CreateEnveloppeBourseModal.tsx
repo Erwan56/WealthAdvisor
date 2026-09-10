@@ -20,7 +20,6 @@ export interface NewEnveloppeData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewEnveloppeData) => Promise<void>;
 }
@@ -28,8 +27,8 @@ interface Props {
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 const COUT_LABEL = (type: BourseEnvelopeType) => (type === 'CTO' ? 'Prix de revient moyen pondéré' : 'Coût d’acquisition');
 
-export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateEnveloppeBourseModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [envLibelle, setEnvLibelle] = useState('');
   const [type, setType] = useState<BourseEnvelopeType>('PEA');
   const [dateOuverture, setDateOuverture] = useState('');
@@ -97,7 +96,7 @@ export function CreateEnveloppeBourseModal({ entities, defaultEntityId, onCancel
           <p>PEA, PEA-PME ou CTO, avec son premier titre. Un compte espèces est créé automatiquement.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select

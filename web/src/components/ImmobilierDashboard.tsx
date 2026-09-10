@@ -4,12 +4,11 @@ import { euros, fmtDate, pct } from '../format';
 import type { Entity, ImmobilierLine } from '../types';
 import { CreateLigneImmobilierModal, type NewImmobilierLigneData } from './CreateLigneImmobilierModal';
 import { EditLigneImmobilierModal, type EditImmobilierLigneData } from './EditLigneImmobilierModal';
-import { EntityAvatar } from './EntityTabs';
+import { EntityAvatar } from './EntityAvatar';
 import { ImmobilierLigneJournal } from './ImmobilierLigneJournal';
 
 interface Props {
   entities: Entity[];
-  selectedEntity: number | 'all';
   notify: (message: string, warn?: boolean) => void;
 }
 
@@ -19,7 +18,7 @@ const REGIME_LABELS: Record<string, string> = {
   saisonniere: 'Location saisonnière',
 };
 
-export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props) {
+export function ImmobilierDashboard({ entities, notify }: Props) {
   const [lines, setLines] = useState<ImmobilierLine[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -27,16 +26,12 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
 
   const load = () => {
     api.immobilier
-      .listLines(selectedEntity)
+      .listLines('all')
       .then(setLines)
       .catch(() => notify('Erreur de chargement des biens', true));
   };
 
-  useEffect(() => {
-    setOpenId(null);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEntity]);
+  useEffect(load, []);
 
   const createLine = async (data: NewImmobilierLigneData) => {
     await api.immobilier.createLine(data);
@@ -69,21 +64,13 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
     }
   };
 
-  const title = selectedEntity === 'all' ? 'Immobilier — Toutes les Entités' : 'Immobilier';
-  const currentEntity = selectedEntity === 'all' ? null : entities.find((e) => e.id === selectedEntity) ?? null;
-  const showEntity = selectedEntity === 'all';
-
   return (
     <div className="dash-main">
       <div className="dash-toolbar">
-        <h2>{currentEntity ? `${title} — ${currentEntity.libelle}` : title}</h2>
-        {selectedEntity === 'all' ? (
-          <span className="muted-hint">Choisissez une Entité pour ajouter un bien</span>
-        ) : (
-          <button type="button" className="btn primary" onClick={() => setShowCreate(true)}>
-            + Ajouter
-          </button>
-        )}
+        <h2>Immobilier</h2>
+        <button type="button" className="btn primary" onClick={() => setShowCreate(true)}>
+          + Ajouter
+        </button>
       </div>
 
       <div className="card">
@@ -102,10 +89,7 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
                 : 'Non loué';
             return (
               <div className={`ledger-row ${isOpen ? 'open' : ''}`} key={line.id}>
-                <div
-                  className={`ledger-row-head ${showEntity ? 'with-entity' : ''}`}
-                  onClick={() => setOpenId(isOpen ? null : line.id)}
-                >
+                <div className="ledger-row-head with-entity" onClick={() => setOpenId(isOpen ? null : line.id)}>
                   <div>
                     <div className="name">{line.libelle}</div>
                     <div className="sub">
@@ -114,7 +98,7 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
                       {line.cash_flow_mensuel != null ? ` · cash-flow ${euros(line.cash_flow_mensuel)}/mois` : ''}
                     </div>
                   </div>
-                  {showEntity && entity && (
+                  {entity && (
                     <div className="ent-cell">
                       <EntityAvatar entity={entity} small />
                       <span>{entity.libelle}</span>
@@ -172,12 +156,7 @@ export function ImmobilierDashboard({ entities, selectedEntity, notify }: Props)
       </div>
 
       {showCreate && (
-        <CreateLigneImmobilierModal
-          entities={entities}
-          defaultEntityId={selectedEntity}
-          onCancel={() => setShowCreate(false)}
-          onCreate={createLine}
-        />
+        <CreateLigneImmobilierModal entities={entities} onCancel={() => setShowCreate(false)} onCreate={createLine} />
       )}
 
       {editingLine && (

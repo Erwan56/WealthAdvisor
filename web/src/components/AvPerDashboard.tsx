@@ -7,11 +7,10 @@ import { CreateLigneAvPerModal, type NewAvPerLigneData } from './CreateLigneAvPe
 import { EditEnveloppeAvPerModal, type EditAvPerEnveloppeData } from './EditEnveloppeAvPerModal';
 import { EditLigneAvPerModal, type EditAvPerLigneData } from './EditLigneAvPerModal';
 import { EnveloppeLigneJournal } from './EnveloppeLigneJournal';
-import { EntityAvatar } from './EntityTabs';
+import { EntityAvatar } from './EntityAvatar';
 
 interface Props {
   entities: Entity[];
-  selectedEntity: number | 'all';
   notify: (message: string, warn?: boolean) => void;
 }
 
@@ -21,7 +20,7 @@ const MOUVEMENT_OPTIONS = [
   { value: 'arbitrage', label: 'Arbitrage' },
 ];
 
-export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
+export function AvPerDashboard({ entities, notify }: Props) {
   const [envelopes, setEnvelopes] = useState<AvPerEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
@@ -31,16 +30,12 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
 
   const load = () => {
     api.avPer
-      .listEnvelopes(selectedEntity)
+      .listEnvelopes('all')
       .then(setEnvelopes)
       .catch(() => notify('Erreur de chargement des contrats', true));
   };
 
-  useEffect(() => {
-    setOpenLineId(null);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEntity]);
+  useEffect(load, []);
 
   const createEnveloppe = async (data: NewAvPerEnveloppeData) => {
     await api.avPer.createEnvelope(data);
@@ -104,21 +99,13 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
     }
   };
 
-  const title = selectedEntity === 'all' ? 'Assurance-vie / PER — Toutes les Entités' : 'Assurance-vie / PER';
-  const currentEntity = selectedEntity === 'all' ? null : entities.find((e) => e.id === selectedEntity) ?? null;
-  const showEntity = selectedEntity === 'all';
-
   return (
     <div className="dash-main">
       <div className="dash-toolbar">
-        <h2>{currentEntity ? `${title} — ${currentEntity.libelle}` : title}</h2>
-        {selectedEntity === 'all' ? (
-          <span className="muted-hint">Choisissez une Entité pour ajouter un contrat</span>
-        ) : (
-          <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
-            + Ajouter
-          </button>
-        )}
+        <h2>Assurance-vie / PER</h2>
+        <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
+          + Ajouter
+        </button>
       </div>
 
       <div className="card">
@@ -136,7 +123,7 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
                     {envelope.libelle} · {envelope.type === 'assurance_vie' ? 'Assurance-vie' : 'PER'}
                     {envelope.date_ouverture ? ` · ouvert ${fmtDate(envelope.date_ouverture)}` : ''}
                     {envelope.statut ? ` · ${envelope.statut}` : ''}
-                    {showEntity && entity ? ` · ${entity.libelle}` : ''}
+                    {entity ? ` · ${entity.libelle}` : ''}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="mono">{euros(envelope.valeur_totale)}</span>
@@ -155,15 +142,12 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
                   const isOpen = openLineId === line.id;
                   return (
                     <div className={`ledger-row ${isOpen ? 'open' : ''}`} key={line.id}>
-                      <div
-                        className={`ledger-row-head ${showEntity ? 'with-entity' : ''}`}
-                        onClick={() => setOpenLineId(isOpen ? null : line.id)}
-                      >
+                      <div className="ledger-row-head with-entity" onClick={() => setOpenLineId(isOpen ? null : line.id)}>
                         <div>
                           <div className="name">{line.libelle}</div>
                           <div className="sub">{line.type_support === 'fonds_euro' ? 'Fonds euro' : line.type_support === 'uc' ? 'Unité de compte' : '—'}</div>
                         </div>
-                        {showEntity && entity && (
+                        {entity && (
                           <div className="ent-cell">
                             <EntityAvatar entity={entity} small />
                             <span>{entity.libelle}</span>
@@ -221,12 +205,7 @@ export function AvPerDashboard({ entities, selectedEntity, notify }: Props) {
       </div>
 
       {showCreateEnveloppe && (
-        <CreateEnveloppeAvPerModal
-          entities={entities}
-          defaultEntityId={selectedEntity}
-          onCancel={() => setShowCreateEnveloppe(false)}
-          onCreate={createEnveloppe}
-        />
+        <CreateEnveloppeAvPerModal entities={entities} onCancel={() => setShowCreateEnveloppe(false)} onCreate={createEnveloppe} />
       )}
 
       {addLigneEnvelope && (

@@ -2,15 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { euros, pct } from '../format';
 import { DOMAIN_LABELS } from '../types';
-import type { Entity, ReportingSummary } from '../types';
+import type { ReportingSummary } from '../types';
 import { Donut } from './Donut';
 import { ReportingDomainDetail } from './ReportingDomainDetail';
 import { Sparkline } from './Sparkline';
-
-interface Props {
-  entities: Entity[];
-  selectedEntity: number | 'all';
-}
 
 function VariationCell({ variation }: { variation: number | null }) {
   if (variation === null) {
@@ -24,23 +19,20 @@ function VariationCell({ variation }: { variation: number | null }) {
   );
 }
 
-export function ReportingDashboard({ entities, selectedEntity }: Props) {
+export function ReportingDashboard() {
   const [summary, setSummary] = useState<ReportingSummary | null>(null);
   const [openDomain, setOpenDomain] = useState<string | null>(null);
 
   useEffect(() => {
-    setSummary(null);
-    api.reporting.summary(selectedEntity).then(setSummary);
-  }, [selectedEntity]);
-
-  const currentEntity = selectedEntity === 'all' ? null : entities.find((e) => e.id === selectedEntity) ?? null;
-  const title = currentEntity ? `Reporting — ${currentEntity.libelle}` : 'Reporting — Toutes les Entités';
+    api.reporting.summary('all').then(setSummary);
+  }, []);
 
   return (
     <div className="dash-main">
       <div className="dash-toolbar">
-        <h2>{title}</h2>
+        <h2>Reporting</h2>
       </div>
+      <div className="screen-subtitle">Reporting — vue d'ensemble en lecture seule</div>
 
       {summary === null ? (
         <div className="card empty-state">Chargement…</div>
@@ -55,12 +47,10 @@ export function ReportingDashboard({ entities, selectedEntity }: Props) {
               <div className="kpi-label">Patrimoine net</div>
               <div className="kpi-value mono">{euros(summary.patrimoine_net)}</div>
             </div>
-            {selectedEntity === 'all' && (
-              <div className="card kpi-card small">
-                <div className="kpi-label">Nombre d'Entités</div>
-                <div className="kpi-value mono">{summary.nombre_entites}</div>
-              </div>
-            )}
+            <div className="card kpi-card small">
+              <div className="kpi-label">Nombre d'Entités</div>
+              <div className="kpi-value mono">{summary.nombre_entites}</div>
+            </div>
           </div>
 
           <div className="card report-donut-card">
@@ -128,7 +118,7 @@ export function ReportingDashboard({ entities, selectedEntity }: Props) {
         </>
       )}
 
-      {openDomain && <ReportingDomainDetail domaine={openDomain} entityId={selectedEntity} onClose={() => setOpenDomain(null)} />}
+      {openDomain && <ReportingDomainDetail domaine={openDomain} entityId="all" onClose={() => setOpenDomain(null)} />}
     </div>
   );
 }

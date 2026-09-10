@@ -7,7 +7,7 @@ import { CreateEnveloppeBourseModal, type NewEnveloppeData } from './CreateEnvel
 import { CreateLigneBourseModal, type NewBourseLigneData } from './CreateLigneBourseModal';
 import { EditEnveloppeBourseModal, type EditEnveloppeData } from './EditEnveloppeBourseModal';
 import { EditLigneBourseModal, type EditLigneData } from './EditLigneBourseModal';
-import { EntityAvatar } from './EntityTabs';
+import { EntityAvatar } from './EntityAvatar';
 
 // What this dashboard registers with the app shell (App.tsx) so its refresh action
 // renders at the dashboard-global level instead of inside its own card — generic
@@ -29,7 +29,6 @@ const FAIL_REASON_LABEL: Record<EchecRaison, string> = {
 
 interface Props {
   entities: Entity[];
-  selectedEntity: number | 'all';
   notify: (message: string, warn?: boolean) => void;
   onDomainAction?: (action: DomainRefreshAction | null) => void;
 }
@@ -71,7 +70,7 @@ function envelopeAggregate(envelope: BourseEnvelope): number | null {
   return has ? sum : null;
 }
 
-export function BourseDashboard({ entities, selectedEntity, notify, onDomainAction }: Props) {
+export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
   const [envelopes, setEnvelopes] = useState<BourseEnvelope[] | null>(null);
   const [openLineId, setOpenLineId] = useState<number | null>(null);
   const [showCreateEnveloppe, setShowCreateEnveloppe] = useState(false);
@@ -83,21 +82,17 @@ export function BourseDashboard({ entities, selectedEntity, notify, onDomainActi
 
   const load = () => {
     api.bourse
-      .listEnvelopes(selectedEntity)
+      .listEnvelopes('all')
       .then(setEnvelopes)
       .catch(() => notify('Erreur de chargement des Enveloppes', true));
   };
 
-  useEffect(() => {
-    setOpenLineId(null);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEntity]);
+  useEffect(load, []);
 
   const runRefresh = async () => {
     setRefreshing(true);
     try {
-      const { rafraichies, echecs } = await api.bourse.refreshCours(selectedEntity);
+      const { rafraichies, echecs } = await api.bourse.refreshCours('all');
       setRefreshFailures(Object.fromEntries(echecs.map((e) => [e.line_id, e.reason])));
       load();
       notify(
@@ -191,21 +186,13 @@ export function BourseDashboard({ entities, selectedEntity, notify, onDomainActi
     }
   };
 
-  const title = selectedEntity === 'all' ? 'Bourse — Toutes les Entités' : 'Bourse';
-  const currentEntity = selectedEntity === 'all' ? null : entities.find((e) => e.id === selectedEntity) ?? null;
-  const showEntity = selectedEntity === 'all';
-
   return (
     <div className="dash-main">
       <div className="dash-toolbar">
-        <h2>{currentEntity ? `${title} — ${currentEntity.libelle}` : title}</h2>
-        {selectedEntity === 'all' ? (
-          <span className="muted-hint">Choisissez une Entité pour ajouter une Enveloppe</span>
-        ) : (
-          <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
-            + Ajouter
-          </button>
-        )}
+        <h2>Bourse</h2>
+        <button type="button" className="btn primary" onClick={() => setShowCreateEnveloppe(true)}>
+          + Ajouter
+        </button>
       </div>
 
       <div className="card">
@@ -224,7 +211,7 @@ export function BourseDashboard({ entities, selectedEntity, notify, onDomainActi
                     {envelope.libelle} · {envelope.type}
                     {envelope.date_ouverture ? ` · ouvert ${fmtDate(envelope.date_ouverture)}` : ''}
                     {envelope.statut ? ` · ${envelope.statut}` : ''}
-                    {showEntity && entity ? ` · ${entity.libelle}` : ''}
+                    {entity ? ` · ${entity.libelle}` : ''}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {aggregate != null && (
@@ -372,7 +359,6 @@ export function BourseDashboard({ entities, selectedEntity, notify, onDomainActi
       {showCreateEnveloppe && (
         <CreateEnveloppeBourseModal
           entities={entities}
-          defaultEntityId={selectedEntity}
           onCancel={() => setShowCreateEnveloppe(false)}
           onCreate={createEnveloppe}
         />

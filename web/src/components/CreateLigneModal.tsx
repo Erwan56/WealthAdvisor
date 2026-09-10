@@ -15,13 +15,12 @@ export interface NewLigneData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewLigneData) => Promise<void>;
 }
 
-export function CreateLigneModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateLigneModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [libelle, setLibelle] = useState('');
   const [typeCompte, setTypeCompte] = useState('');
   const [plafond, setPlafond] = useState('');
@@ -69,7 +68,7 @@ export function CreateLigneModal({ entities, defaultEntityId, onCancel, onCreate
           <p>Compte courant, livret… une Ligne autonome, sans Enveloppe.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select

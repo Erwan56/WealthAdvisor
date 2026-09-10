@@ -5,7 +5,6 @@ import type { ChatMessage, Entity, Finding, OverrideProposal } from '../types';
 
 interface Props {
   entities: Entity[];
-  selectedEntity: number | 'all';
   notify: (message: string, warn?: boolean) => void;
 }
 
@@ -17,9 +16,9 @@ function domaineLabel(domaine: string): string {
 
 // Écran « Conseils » (ticket 4) : affichage proactif des Findings déterministes (PRD §6 —
 // détecté à l'ouverture de l'app / après mise à jour) + chat de conseil hybride consultatif.
-// Le chat porte toujours sur le patrimoine total (pas de scoping par Entité — PRD §6) ; la
-// liste de Findings reste filtrable par Entité, comme le Dashboard et le Reporting.
-export function ConseilsScreen({ entities, selectedEntity, notify }: Props) {
+// Le chat comme la liste de Findings portent toujours sur le patrimoine total, toutes
+// Entités confondues (plus de filtrage par Entité — refonte-saisie-patrimoine, ticket 01).
+export function ConseilsScreen({ entities, notify }: Props) {
   const [findings, setFindings] = useState<Finding[] | null>(null);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string; reserves?: string[]; alerte?: number[] }[]>([]);
   const [pendingOverride, setPendingOverride] = useState<OverrideProposal | null>(null);
@@ -28,8 +27,8 @@ export function ConseilsScreen({ entities, selectedEntity, notify }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.conseils.findings(selectedEntity).then(({ findings }) => setFindings(findings));
-  }, [selectedEntity]);
+    api.conseils.findings('all').then(({ findings }) => setFindings(findings));
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });

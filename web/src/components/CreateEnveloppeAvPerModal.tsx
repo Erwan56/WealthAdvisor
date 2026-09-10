@@ -13,13 +13,12 @@ export interface NewAvPerEnveloppeData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewAvPerEnveloppeData) => Promise<void>;
 }
 
-export function CreateEnveloppeAvPerModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateEnveloppeAvPerModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [envLibelle, setEnvLibelle] = useState('');
   const [type, setType] = useState<AvPerEnvelopeType>('assurance_vie');
   const [dateOuverture, setDateOuverture] = useState('');
@@ -76,7 +75,7 @@ export function CreateEnveloppeAvPerModal({ entities, defaultEntityId, onCancel,
           <p>Le contrat (Enveloppe), avec son premier support.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select

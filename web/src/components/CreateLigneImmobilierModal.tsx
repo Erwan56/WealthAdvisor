@@ -22,13 +22,12 @@ export interface NewImmobilierLigneData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewImmobilierLigneData) => Promise<void>;
 }
 
-export function CreateLigneImmobilierModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateLigneImmobilierModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [libelle, setLibelle] = useState('');
   const [prixAcquisition, setPrixAcquisition] = useState('');
   const [dateAcquisition, setDateAcquisition] = useState('');
@@ -90,7 +89,7 @@ export function CreateLigneImmobilierModal({ entities, defaultEntityId, onCancel
           <p>Une Ligne autonome, sans Enveloppe.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select

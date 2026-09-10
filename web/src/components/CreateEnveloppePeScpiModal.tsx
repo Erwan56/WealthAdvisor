@@ -14,13 +14,12 @@ export interface NewPeScpiEnveloppeData {
 
 interface Props {
   entities: Entity[];
-  defaultEntityId: number | 'all';
   onCancel: () => void;
   onCreate: (data: NewPeScpiEnveloppeData) => Promise<void>;
 }
 
-export function CreateEnveloppePeScpiModal({ entities, defaultEntityId, onCancel, onCreate }: Props) {
-  const [entityId, setEntityId] = useState<number | ''>(defaultEntityId === 'all' ? '' : defaultEntityId);
+export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Props) {
+  const [entityId, setEntityId] = useState<number | ''>('');
   const [envLibelle, setEnvLibelle] = useState('');
   const [typeDispositif, setTypeDispositif] = useState<PeScpiDispositif>('SCPI');
   const [dureeBlocage, setDureeBlocage] = useState('');
@@ -77,7 +76,7 @@ export function CreateEnveloppePeScpiModal({ entities, defaultEntityId, onCancel
           <p>Le fonds (Enveloppe), avec sa première part souscrite.</p>
         </div>
 
-        {entities.length > 1 && (
+        {(
           <div className="field-row">
             <label>Entité</label>
             <select
