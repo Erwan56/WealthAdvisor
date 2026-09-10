@@ -24,7 +24,7 @@ export function EditEnveloppeBourseModal({ envelope, onCancel, onSave }: Props) 
 
   const submit = async () => {
     if (!libelle.trim()) {
-      setError('Libellé de l’Enveloppe requis');
+      setError('Libellé du compte requis');
       return;
     }
     setSaving(true);
@@ -47,12 +47,12 @@ export function EditEnveloppeBourseModal({ envelope, onCancel, onSave }: Props) 
     <div className="overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="create-panel">
         <div className="create-panel-head">
-          <h3>Modifier l’Enveloppe</h3>
+          <h3>Modifier le compte</h3>
           <p>{envelope.libelle}</p>
         </div>
 
         <div className="field-row">
-          <label>Libellé de l’Enveloppe</label>
+          <label>Libellé du compte</label>
           <input className="field-input" value={libelle} onChange={(e) => setLibelle(e.target.value)} />
         </div>
         <div className="field-row">

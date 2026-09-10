@@ -6,6 +6,7 @@ export interface EditLigneData {
   isin?: string | null;
   quantite?: number | null;
   cout_acquisition_unitaire?: number | null;
+  date_achat?: string | null;
 }
 
 interface Props {
@@ -16,7 +17,8 @@ interface Props {
 }
 
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
-const COUT_LABEL = (type: BourseEnvelope['type']) => (type === 'CTO' ? 'Prix de revient moyen pondéré' : 'Coût d’acquisition');
+const COUT_LABEL = (type: BourseEnvelope['type']) =>
+  type === 'CTO' ? 'Prix de revient moyen pondéré unitaire' : 'Coût d’acquisition unitaire';
 
 export function EditLigneBourseModal({ envelope, line, onCancel, onSave }: Props) {
   const [libelle, setLibelle] = useState(line.libelle);
@@ -25,6 +27,7 @@ export function EditLigneBourseModal({ envelope, line, onCancel, onSave }: Props
   const [coutAcquisition, setCoutAcquisition] = useState(
     line.cout_acquisition_unitaire !== null ? String(line.cout_acquisition_unitaire) : ''
   );
+  const [dateAchat, setDateAchat] = useState(line.date_achat ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +51,7 @@ export function EditLigneBourseModal({ envelope, line, onCancel, onSave }: Props
           isin: isin.trim() || null,
           quantite: quantite ? Number(quantite) : null,
           cout_acquisition_unitaire: coutAcquisition ? Number(coutAcquisition) : null,
+          date_achat: dateAchat || null,
         });
       }
     } catch (err) {
@@ -92,6 +96,10 @@ export function EditLigneBourseModal({ envelope, line, onCancel, onSave }: Props
                 value={coutAcquisition}
                 onChange={(e) => setCoutAcquisition(e.target.value)}
               />
+            </div>
+            <div className="field-row">
+              <label>Date d’achat</label>
+              <input className="field-input" type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)} />
             </div>
           </>
         )}

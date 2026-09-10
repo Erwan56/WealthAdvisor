@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { today } from '../format';
 import { PE_SCPI_DISPOSITIFS, type Entity, type PeScpiDispositif } from '../types';
 
 export interface NewPeScpiEnveloppeData {
@@ -9,7 +8,6 @@ export interface NewPeScpiEnveloppeData {
   duree_blocage?: number;
   date_ouverture?: string;
   statut?: string;
-  line: { libelle: string; nombre_parts: number; valeur_initiale: number; date: string };
 }
 
 interface Props {
@@ -25,9 +23,6 @@ export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Pro
   const [dureeBlocage, setDureeBlocage] = useState('');
   const [dateOuverture, setDateOuverture] = useState('');
   const [statut, setStatut] = useState('Actif');
-  const [nombreParts, setNombreParts] = useState('');
-  const [valeur, setValeur] = useState('');
-  const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,10 +35,6 @@ export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Pro
       setError('Libellé du fonds requis');
       return;
     }
-    if (!nombreParts) {
-      setError('Nombre de parts requis');
-      return;
-    }
     setSaving(true);
     setError(null);
     try {
@@ -54,12 +45,6 @@ export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Pro
         duree_blocage: dureeBlocage ? Number(dureeBlocage) : undefined,
         date_ouverture: dateOuverture || undefined,
         statut: statut || undefined,
-        line: {
-          libelle: envLibelle.trim(),
-          nombre_parts: Number(nombreParts),
-          valeur_initiale: valeur ? Number(valeur) : 0,
-          date,
-        },
       });
     } catch (err) {
       setError((err as Error).message);
@@ -73,26 +58,24 @@ export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Pro
       <div className="create-panel">
         <div className="create-panel-head">
           <h3>Nouveau fonds — Private equity / SCPI</h3>
-          <p>Le fonds (Enveloppe), avec sa première part souscrite.</p>
+          <p>Le fonds, sans première part souscrite — ajoutez-en une ensuite via « + Part ».</p>
         </div>
 
-        {(
-          <div className="field-row">
-            <label>Entité</label>
-            <select
-              className="field-input"
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
-            >
-              <option value="">— Choisir —</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.libelle}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="field-row">
+          <label>Entité</label>
+          <select
+            className="field-input"
+            value={entityId}
+            onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— Choisir —</option>
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.libelle}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="field-row">
           <label>Libellé du fonds</label>
           <input className="field-input" value={envLibelle} onChange={(e) => setEnvLibelle(e.target.value)} placeholder="ex. SCPI Corum Origin" />
@@ -121,19 +104,6 @@ export function CreateEnveloppePeScpiModal({ entities, onCancel, onCreate }: Pro
             <option value="Actif">Actif</option>
             <option value="Clôturé">Clôturé</option>
           </select>
-        </div>
-
-        <div className="field-row highlight">
-          <label>Nombre de parts souscrites</label>
-          <input className="field-input" type="number" value={nombreParts} onChange={(e) => setNombreParts(e.target.value)} />
-        </div>
-        <div className="field-row highlight">
-          <label>Date de la valorisation</label>
-          <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <div className="field-row">
-          <label>Valeur actuelle estimée</label>
-          <input className="field-input" type="number" value={valeur} onChange={(e) => setValeur(e.target.value)} />
         </div>
 
         {error && <div className="error-banner" style={{ margin: '0 22px 12px' }}>{error}</div>}

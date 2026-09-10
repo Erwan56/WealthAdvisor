@@ -77,7 +77,7 @@ function echeanceBlocage(envelopes: PeScpiEnvelopeRow[]): Finding[] {
       type: 'contexte',
       entity_id: env.entity_id,
       titre: `Échéance de blocage ${status === 'imminent' ? 'proche' : 'franchie'} — ${env.libelle}`,
-      detail: `Durée de blocage renseignée pour cette Enveloppe (${env.duree_blocage} an${env.duree_blocage! >= 2 ? 's' : ''}).`,
+      detail: `Durée de blocage renseignée pour ce fonds (${env.duree_blocage} an${env.duree_blocage! >= 2 ? 's' : ''}).`,
       chiffres: { date_echeance: echeance.toISOString().slice(0, 10), duree_blocage_ans: env.duree_blocage },
       confiance: 'fiable',
     });

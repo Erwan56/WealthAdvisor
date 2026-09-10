@@ -108,14 +108,6 @@ export const api = {
       type: BourseEnvelopeType;
       date_ouverture?: string;
       statut?: string;
-      line: {
-        libelle: string;
-        isin?: string;
-        quantite?: number;
-        cout_acquisition_unitaire?: number;
-        valeur_initiale: number;
-        date: string;
-      };
     }) => request<BourseEnvelope>('/bourse/envelopes', { method: 'POST', body: JSON.stringify(data) }),
     updateEnvelope: (
       id: number,
@@ -128,14 +120,15 @@ export const api = {
         libelle: string;
         isin?: string;
         quantite?: number;
-        cout_acquisition_unitaire?: number;
-        valeur_initiale: number;
-        date: string;
+        cout_acquisition_unitaire: number;
+        date_achat: string;
       }
     ) => request<BourseLine>(`/bourse/envelopes/${envelopeId}/lines`, { method: 'POST', body: JSON.stringify(data) }),
     updateLine: (
       id: number,
-      data: Partial<Pick<BourseLine, 'libelle' | 'note' | 'isin' | 'quantite' | 'cout_acquisition_unitaire'>>
+      data: Partial<
+        Pick<BourseLine, 'libelle' | 'note' | 'isin' | 'quantite' | 'cout_acquisition_unitaire' | 'date_achat'>
+      >
     ) => request<BourseLine>(`/bourse/lines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteLine: (id: number) => request<void>(`/bourse/lines/${id}`, { method: 'DELETE' }),
     refreshCours: (entityId: number | 'all') =>
@@ -144,14 +137,7 @@ export const api = {
         echecs: { line_id: number; reason: 'isin_non_trouve' | 'devise_non_convertible' | 'source_indisponible' }[];
       }>('/bourse/lines/refresh-cours', { method: 'POST', body: JSON.stringify({ entity_id: entityId }) }),
     listValorisations: (lineId: number) => request<Valorisation[]>(`/bourse/lines/${lineId}/valorisations`),
-    addValorisation: (
-      lineId: number,
-      data: {
-        date: string;
-        valeur: number;
-        mouvement?: { type: string; montant?: number; quantite?: number; prix_unitaire?: number };
-      }
-    ) =>
+    addValorisation: (lineId: number, data: { date: string; valeur: number }) =>
       request<Valorisation>(`/bourse/lines/${lineId}/valorisations`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -221,7 +207,6 @@ export const api = {
       type: AvPerEnvelopeType;
       date_ouverture?: string;
       statut?: string;
-      line: { libelle: string; nom_support?: string; type_support?: AvPerSupportType; valeur_initiale: number; date: string };
     }) => request<AvPerEnvelope>('/av-per/envelopes', { method: 'POST', body: JSON.stringify(data) }),
     updateEnvelope: (
       id: number,
@@ -251,7 +236,6 @@ export const api = {
       prix_acquisition_cumule?: number;
       date_ouverture?: string;
       statut?: string;
-      line: { libelle: string; symbole: string; quantite: number; valeur_initiale: number; date: string };
     }) => request<CryptoEnvelope>('/crypto/envelopes', { method: 'POST', body: JSON.stringify(data) }),
     updateEnvelope: (
       id: number,
@@ -285,7 +269,6 @@ export const api = {
       duree_blocage?: number;
       date_ouverture?: string;
       statut?: string;
-      line: { libelle: string; nombre_parts: number; valeur_initiale: number; date: string };
     }) => request<PeScpiEnvelope>('/pe-scpi/envelopes', { method: 'POST', body: JSON.stringify(data) }),
     updateEnvelope: (
       id: number,

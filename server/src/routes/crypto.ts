@@ -122,30 +122,20 @@ cryptoRouter.get('/envelopes', (req, res) => {
 });
 
 // POST /api/crypto/envelopes — creates a portefeuille and its first actif Ligne (PRD §3.5).
+// Creates the portefeuille alone, sans premier actif (refonte-saisie-patrimoine,
+// ticket 07) : le premier actif se saisit ensuite via POST /envelopes/:id/lines,
+// comme tout actif suivant.
 cryptoRouter.post('/envelopes', (req, res) => {
-  const { entity_id, libelle, plateforme_etrangere, prix_acquisition_cumule, date_ouverture, statut, line } =
-    req.body ?? {};
+  const { entity_id, libelle, plateforme_etrangere, prix_acquisition_cumule, date_ouverture, statut } = req.body ?? {};
 
   if (!entity_id || !libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'entity_id et libelle requis' });
-  }
-  if (!line || !line.libelle || typeof line.libelle !== 'string') {
-    return res.status(400).json({ error: 'line.libelle requis (premier actif du portefeuille)' });
-  }
-  if (!line.symbole || typeof line.symbole !== 'string') {
-    return res.status(400).json({ error: 'line.symbole requis' });
-  }
-  if (toNumberOrNull(line.quantite) === null) {
-    return res.status(400).json({ error: 'line.quantite requis' });
   }
 
   const entity = db.prepare('SELECT id FROM entities WHERE id = ?').get(entity_id);
   if (!entity) {
     return res.status(404).json({ error: 'Entité introuvable' });
   }
-
-  const valDate = line.date || new Date().toISOString().slice(0, 10);
-  const valeur = typeof line.valeur_initiale === 'number' ? line.valeur_initiale : Number(line.valeur_initiale) || 0;
 
   const envelopeId = db.transaction(() => {
     const envInfo = db
@@ -159,16 +149,6 @@ cryptoRouter.post('/envelopes', (req, res) => {
     db.prepare(
       'INSERT INTO envelope_crypto (envelope_id, plateforme_etrangere, prix_acquisition_cumule) VALUES (?, ?, ?)'
     ).run(envId, plateforme_etrangere ? 1 : 0, toNumberOrNull(prix_acquisition_cumule));
-
-    insertActifLine({
-      entityId: entity_id,
-      envelopeId: envId,
-      libelle: line.libelle,
-      symbole: line.symbole,
-      quantite: line.quantite,
-      valeur,
-      date: valDate,
-    });
 
     return envId;
   })();

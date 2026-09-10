@@ -118,8 +118,11 @@ peScpiRouter.get('/envelopes', (req, res) => {
 });
 
 // POST /api/pe-scpi/envelopes — creates un fonds and its first part souscrite Ligne (PRD §3.6).
+// Creates the fonds alone, sans première part souscrite (refonte-saisie-patrimoine,
+// ticket 07) : la première part se saisit ensuite via POST /envelopes/:id/lines,
+// comme toute part suivante.
 peScpiRouter.post('/envelopes', (req, res) => {
-  const { entity_id, libelle, type_dispositif, duree_blocage, date_ouverture, statut, line } = req.body ?? {};
+  const { entity_id, libelle, type_dispositif, duree_blocage, date_ouverture, statut } = req.body ?? {};
 
   if (!entity_id || !libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'entity_id et libelle requis' });
@@ -127,20 +130,11 @@ peScpiRouter.post('/envelopes', (req, res) => {
   if (!TYPE_DISPOSITIF.includes(type_dispositif)) {
     return res.status(400).json({ error: `type_dispositif doit être l'un de ${TYPE_DISPOSITIF.join(', ')}` });
   }
-  if (!line || !line.libelle || typeof line.libelle !== 'string') {
-    return res.status(400).json({ error: 'line.libelle requis (première part souscrite du fonds)' });
-  }
-  if (toNumberOrNull(line.nombre_parts) === null) {
-    return res.status(400).json({ error: 'line.nombre_parts requis' });
-  }
 
   const entity = db.prepare('SELECT id FROM entities WHERE id = ?').get(entity_id);
   if (!entity) {
     return res.status(404).json({ error: 'Entité introuvable' });
   }
-
-  const valDate = line.date || new Date().toISOString().slice(0, 10);
-  const valeur = typeof line.valeur_initiale === 'number' ? line.valeur_initiale : Number(line.valeur_initiale) || 0;
 
   const envelopeId = db.transaction(() => {
     const envInfo = db
@@ -156,15 +150,6 @@ peScpiRouter.post('/envelopes', (req, res) => {
       type_dispositif,
       toNumberOrNull(duree_blocage)
     );
-
-    insertPartLine({
-      entityId: entity_id,
-      envelopeId: envId,
-      libelle: line.libelle,
-      nombreParts: line.nombre_parts,
-      valeur,
-      date: valDate,
-    });
 
     return envId;
   })();

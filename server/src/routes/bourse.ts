@@ -21,7 +21,7 @@ const ENVELOPE_SELECT = `
 const LINE_SELECT = `
   SELECT
     l.id, l.entity_id, l.envelope_id, l.libelle, l.valeur_actuelle, l.date_derniere_valorisation, l.note,
-    lb.isin, lb.quantite, lb.cout_acquisition_unitaire, lb.est_compte_especes
+    lb.isin, lb.quantite, lb.cout_acquisition_unitaire, lb.est_compte_especes, lb.date_achat
   FROM lines l
   JOIN line_bourse lb ON lb.line_id = l.id
   WHERE l.domaine = 'bourse'
@@ -56,6 +56,7 @@ interface LineRow {
   quantite: number | null;
   cout_acquisition_unitaire: number | null;
   est_compte_especes: 0 | 1;
+  date_achat: string | null;
 }
 
 function linesByEnvelope(envelopeIds: number[]): Map<number, LineRow[]> {
@@ -90,10 +91,12 @@ function toNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) && v !== undefined && v !== null && v !== '' ? n : null;
 }
 
-// Inserts a titre Ligne (ISIN + quantité + coût d'acquisition, saisissable pour
-// toutes les Enveloppes depuis l'extension du coût d'acquisition aux PEA/PEA-PME —
-// ticket 02) and its first Valorisation. Shared by Enveloppe creation and the "add
-// titre to an existing Enveloppe" endpoint (PRD §3.2).
+// Inserts a titre Ligne (ISIN + quantité + coût d'acquisition unitaire, saisissable
+// pour toutes les Enveloppes depuis l'extension du coût d'acquisition aux PEA/PEA-PME
+// — ticket 02) and its first Valorisation. `valeur_actuelle` est désormais toujours
+// dérivée de quantité × coût d'acquisition unitaire (jamais saisie), enregistrée à la
+// Date d'achat (refonte-saisie-patrimoine, ticket 08). Shared by Enveloppe creation
+// and the "add titre to an existing Enveloppe" endpoint (PRD §3.2).
 function insertTitreLine(params: {
   entityId: number;
   envelopeId: number;
@@ -101,23 +104,25 @@ function insertTitreLine(params: {
   isin: unknown;
   quantite: unknown;
   coutAcquisitionUnitaire: unknown;
-  valeur: number;
-  date: string;
+  dateAchat: string;
 }): number {
-  const { entityId, envelopeId, libelle, isin, quantite, coutAcquisitionUnitaire, valeur, date } = params;
+  const { entityId, envelopeId, libelle, isin, quantite, coutAcquisitionUnitaire, dateAchat } = params;
+  const qte = toNumberOrNull(quantite) ?? 0;
+  const cout = toNumberOrNull(coutAcquisitionUnitaire) ?? 0;
+  const valeur = qte * cout;
 
   const info = db
     .prepare(
       `INSERT INTO lines (entity_id, domaine, envelope_id, libelle, valeur_actuelle, date_derniere_valorisation, note)
        VALUES (?, 'bourse', ?, ?, ?, ?, NULL)`
     )
-    .run(entityId, envelopeId, libelle, valeur, date);
+    .run(entityId, envelopeId, libelle, valeur, dateAchat);
   const lineId = info.lastInsertRowid as number;
   db.prepare(
-    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes)
-     VALUES (?, ?, ?, ?, 0)`
-  ).run(lineId, isin ?? null, toNumberOrNull(quantite), toNumberOrNull(coutAcquisitionUnitaire));
-  db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)').run(lineId, date, valeur);
+    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes, date_achat)
+     VALUES (?, ?, ?, ?, 0, ?)`
+  ).run(lineId, isin ?? null, toNumberOrNull(quantite), toNumberOrNull(coutAcquisitionUnitaire), dateAchat);
+  db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)').run(lineId, dateAchat, valeur);
   return lineId;
 }
 
@@ -131,8 +136,8 @@ function insertCashLine(entityId: number, envelopeId: number, date: string): num
     .run(entityId, envelopeId, date);
   const lineId = info.lastInsertRowid as number;
   db.prepare(
-    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes)
-     VALUES (?, NULL, NULL, NULL, 1)`
+    `INSERT INTO line_bourse (line_id, isin, quantite, cout_acquisition_unitaire, est_compte_especes, date_achat)
+     VALUES (?, NULL, NULL, NULL, 1, NULL)`
   ).run(lineId);
   db.prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, 0)').run(lineId, date);
   return lineId;
@@ -150,10 +155,12 @@ bourseRouter.get('/envelopes', (req, res) => {
   res.json(withLines(envelopes));
 });
 
-// POST /api/bourse/envelopes — creates an Enveloppe, its first titre Ligne, and its
-// auto-managed "compte espèces" Ligne (PRD §3.2).
+// POST /api/bourse/envelopes — creates a Compte and its auto-managed "compte
+// espèces" Ligne, sans premier titre (refonte-saisie-patrimoine, ticket 07) : le
+// premier titre se saisit ensuite via POST /envelopes/:id/lines, comme tout titre
+// suivant.
 bourseRouter.post('/envelopes', (req, res) => {
-  const { entity_id, libelle, type, date_ouverture, statut, line } = req.body ?? {};
+  const { entity_id, libelle, type, date_ouverture, statut } = req.body ?? {};
 
   if (!entity_id || !libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'entity_id et libelle requis' });
@@ -161,23 +168,13 @@ bourseRouter.post('/envelopes', (req, res) => {
   if (!ENVELOPE_TYPES.includes(type)) {
     return res.status(400).json({ error: `type doit être l'un de ${ENVELOPE_TYPES.join(', ')}` });
   }
-  if (!line || !line.libelle || typeof line.libelle !== 'string') {
-    return res.status(400).json({ error: 'line.libelle requis (premier titre de l’Enveloppe)' });
-  }
-  if (line.isin !== undefined && line.isin !== null && line.isin !== '' && !ISIN_RE.test(line.isin)) {
-    return res.status(400).json({ error: 'line.isin invalide (12 caractères : code pays + identifiant + clé)' });
-  }
-  if (toNumberOrNull(line.quantite) === null) {
-    return res.status(400).json({ error: 'line.quantite requis' });
-  }
 
   const entity = db.prepare('SELECT id FROM entities WHERE id = ?').get(entity_id);
   if (!entity) {
     return res.status(404).json({ error: 'Entité introuvable' });
   }
 
-  const valDate = line.date || new Date().toISOString().slice(0, 10);
-  const valeur = typeof line.valeur_initiale === 'number' ? line.valeur_initiale : Number(line.valeur_initiale) || 0;
+  const openDate = date_ouverture || new Date().toISOString().slice(0, 10);
 
   const envelopeId = db.transaction(() => {
     const envInfo = db
@@ -189,18 +186,7 @@ bourseRouter.post('/envelopes', (req, res) => {
     const envId = envInfo.lastInsertRowid as number;
 
     db.prepare('INSERT INTO envelope_bourse (envelope_id, type) VALUES (?, ?)').run(envId, type);
-
-    insertTitreLine({
-      entityId: entity_id,
-      envelopeId: envId,
-      libelle: line.libelle,
-      isin: line.isin,
-      quantite: line.quantite,
-      coutAcquisitionUnitaire: line.cout_acquisition_unitaire,
-      valeur,
-      date: valDate,
-    });
-    insertCashLine(entity_id, envId, valDate);
+    insertCashLine(entity_id, envId, openDate);
 
     return envId;
   })();
@@ -278,7 +264,7 @@ bourseRouter.post('/envelopes/:id/lines', (req, res) => {
     return res.status(404).json({ error: 'Enveloppe introuvable' });
   }
 
-  const { libelle, isin, quantite, cout_acquisition_unitaire, valeur_initiale, date } = req.body ?? {};
+  const { libelle, isin, quantite, cout_acquisition_unitaire, date_achat } = req.body ?? {};
   if (!libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'libelle requis' });
   }
@@ -288,11 +274,13 @@ bourseRouter.post('/envelopes/:id/lines', (req, res) => {
   if (toNumberOrNull(quantite) === null) {
     return res.status(400).json({ error: 'quantite requis' });
   }
+  if (toNumberOrNull(cout_acquisition_unitaire) === null) {
+    return res.status(400).json({ error: 'cout_acquisition_unitaire requis' });
+  }
 
   const entityId = (db.prepare('SELECT entity_id FROM envelopes WHERE id = ?').get(envId) as { entity_id: number })
     .entity_id;
-  const valDate = date || new Date().toISOString().slice(0, 10);
-  const valeur = typeof valeur_initiale === 'number' ? valeur_initiale : Number(valeur_initiale) || 0;
+  const dateAchat = date_achat || new Date().toISOString().slice(0, 10);
 
   const lineId = db.transaction(() =>
     insertTitreLine({
@@ -302,8 +290,7 @@ bourseRouter.post('/envelopes/:id/lines', (req, res) => {
       isin,
       quantite,
       coutAcquisitionUnitaire: cout_acquisition_unitaire,
-      valeur,
-      date: valDate,
+      dateAchat,
     })
   )();
 
@@ -324,12 +311,12 @@ bourseRouter.put('/lines/:id', (req, res) => {
   const meta = db.prepare('SELECT est_compte_especes FROM line_bourse WHERE line_id = ?').get(lineId) as {
     est_compte_especes: 0 | 1;
   };
-  const { libelle, note, isin, quantite, cout_acquisition_unitaire } = req.body ?? {};
+  const { libelle, note, isin, quantite, cout_acquisition_unitaire, date_achat } = req.body ?? {};
   if (
     meta.est_compte_especes &&
-    (isin !== undefined || quantite !== undefined || cout_acquisition_unitaire !== undefined)
+    (isin !== undefined || quantite !== undefined || cout_acquisition_unitaire !== undefined || date_achat !== undefined)
   ) {
-    return res.status(400).json({ error: 'Le compte espèces n’a ni ISIN, ni quantité, ni coût d’acquisition.' });
+    return res.status(400).json({ error: 'Le compte espèces n’a ni ISIN, ni quantité, ni coût d’acquisition, ni date d’achat.' });
   }
   if (isin !== undefined && isin !== null && isin !== '' && !ISIN_RE.test(isin)) {
     return res.status(400).json({ error: 'isin invalide (12 caractères : code pays + identifiant + clé)' });
@@ -353,6 +340,9 @@ bourseRouter.put('/lines/:id', (req, res) => {
         toNumberOrNull(cout_acquisition_unitaire),
         lineId
       );
+    }
+    if (date_achat !== undefined) {
+      db.prepare('UPDATE line_bourse SET date_achat = ? WHERE line_id = ?').run(date_achat || null, lineId);
     }
   })();
 
@@ -405,7 +395,7 @@ bourseRouter.post('/lines/:id/valorisations', (req, res) => {
     return res.status(404).json({ error: 'Ligne introuvable' });
   }
 
-  const { date, valeur, mouvement } = req.body ?? {};
+  const { date, valeur } = req.body ?? {};
   if (!date || typeof valeur !== 'number') {
     return res.status(400).json({ error: 'date et valeur (number) requis' });
   }
@@ -414,20 +404,6 @@ bourseRouter.post('/lines/:id/valorisations', (req, res) => {
     const info = db
       .prepare('INSERT INTO valorisations (line_id, date, valeur) VALUES (?, ?, ?)')
       .run(lineId, date, valeur);
-
-    if (mouvement && mouvement.type) {
-      db.prepare(
-        `INSERT INTO mouvements (line_id, type, date, montant, quantite, prix_unitaire)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      ).run(
-        lineId,
-        mouvement.type,
-        date,
-        mouvement.montant ?? null,
-        mouvement.quantite ?? null,
-        mouvement.prix_unitaire ?? null
-      );
-    }
 
     recomputeLineCurrentValue(lineId);
     return info.lastInsertRowid;

@@ -48,7 +48,7 @@ function concentrationParLigne(lines: BourseLineRow[]): Finding[] {
         type: 'anomalie',
         entity_id: entityId,
         titre: `Concentration excessive — ${line.libelle}`,
-        detail: `Cette Ligne dépasse ${RULES.bourse.concentrationLigneSeuilPct * 100} % du total bourse cumulé (PEA+PEA-PME+CTO) de l'Entité. Rééquilibrage possible vers d'autres Lignes/Enveloppes déjà détenues.`,
+        detail: `Cette Ligne dépasse ${RULES.bourse.concentrationLigneSeuilPct * 100} % du total bourse cumulé (PEA+PEA-PME+CTO) de l'Entité. Rééquilibrage possible vers d'autres Lignes/Comptes déjà détenus.`,
         chiffres: { valeur_ligne: line.valeur_actuelle, total_bourse_entite: total, part_pct: pct * 100 },
         confiance: 'fiable',
       });
@@ -84,7 +84,7 @@ function cashDormant(lines: BourseLineRow[], envelopes: BourseEnvelopeRow[]): Fi
       type: 'anomalie',
       entity_id: env.entity_id,
       titre: `Cash dormant — ${env.libelle}`,
-      detail: `Le compte espèces dépasse ${RULES.bourse.cashDormantEnveloppeSeuilPct * 100} % de la valeur de l'Enveloppe.`,
+      detail: `Le compte espèces dépasse ${RULES.bourse.cashDormantEnveloppeSeuilPct * 100} % de la valeur du compte.`,
       chiffres: { cash: cash.valeur_actuelle, total_enveloppe: total, part_pct: pct * 100 },
       confiance: 'fiable',
     });

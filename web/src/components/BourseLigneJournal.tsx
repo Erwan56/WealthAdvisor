@@ -13,19 +13,6 @@ export function BourseLigneJournal({ line, notify, onLineChanged }: Props) {
   const [history, setHistory] = useState<Valorisation[] | null>(null);
   const [newDate, setNewDate] = useState(today());
   const [newValeur, setNewValeur] = useState(String(line.valeur_actuelle));
-  const mouvementOptions = line.est_compte_especes
-    ? [
-        { value: 'versement', label: 'Versement' },
-        { value: 'retrait', label: 'Retrait' },
-      ]
-    : [
-        { value: 'achat', label: 'Achat' },
-        { value: 'vente', label: 'Vente' },
-      ];
-  const [mouvementType, setMouvementType] = useState(mouvementOptions[0].value);
-  const [mouvementMontant, setMouvementMontant] = useState('');
-  const [mouvementQuantite, setMouvementQuantite] = useState('');
-  const [mouvementPrixUnitaire, setMouvementPrixUnitaire] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -45,19 +32,8 @@ export function BourseLigneJournal({ line, notify, onLineChanged }: Props) {
     }
     setSaving(true);
     try {
-      const montant = mouvementMontant ? Number(mouvementMontant) : undefined;
-      const quantite = mouvementQuantite ? Number(mouvementQuantite) : undefined;
-      const prix_unitaire = mouvementPrixUnitaire ? Number(mouvementPrixUnitaire) : undefined;
-      const hasMouvement = montant !== undefined || quantite !== undefined || prix_unitaire !== undefined;
-      await api.bourse.addValorisation(line.id, {
-        date: newDate,
-        valeur,
-        mouvement: hasMouvement ? { type: mouvementType, montant, quantite, prix_unitaire } : undefined,
-      });
+      await api.bourse.addValorisation(line.id, { date: newDate, valeur });
       notify('Nouvelle entrée ajoutée au journal');
-      setMouvementMontant('');
-      setMouvementQuantite('');
-      setMouvementPrixUnitaire('');
       load();
       onLineChanged();
     } catch (err) {
@@ -114,53 +90,6 @@ export function BourseLigneJournal({ line, notify, onLineChanged }: Props) {
             <input type="number" value={newValeur} onChange={(e) => setNewValeur(e.target.value)} />
           </div>
         </div>
-        <details className="disclosure">
-          <summary>Associer un mouvement ({line.est_compte_especes ? 'versement, retrait…' : 'achat, vente…'})</summary>
-          <div className="disclosure-body">
-            <div className="field-row">
-              <label>Type</label>
-              <select className="field-input" value={mouvementType} onChange={(e) => setMouvementType(e.target.value)}>
-                {mouvementOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {line.est_compte_especes ? (
-              <div className="field-row">
-                <label>Montant</label>
-                <input
-                  className="field-input"
-                  type="number"
-                  value={mouvementMontant}
-                  onChange={(e) => setMouvementMontant(e.target.value)}
-                />
-              </div>
-            ) : (
-              <>
-                <div className="field-row">
-                  <label>Quantité</label>
-                  <input
-                    className="field-input"
-                    type="number"
-                    value={mouvementQuantite}
-                    onChange={(e) => setMouvementQuantite(e.target.value)}
-                  />
-                </div>
-                <div className="field-row">
-                  <label>Prix unitaire</label>
-                  <input
-                    className="field-input"
-                    type="number"
-                    value={mouvementPrixUnitaire}
-                    onChange={(e) => setMouvementPrixUnitaire(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </details>
         <div className="btn-row" style={{ padding: '12px 0 0' }}>
           <button type="button" className="btn primary" disabled={saving} onClick={addEntry}>
             Ajouter au journal

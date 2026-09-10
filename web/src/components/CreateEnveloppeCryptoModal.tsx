@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { today } from '../format';
 import type { Entity } from '../types';
 
 export interface NewCryptoEnveloppeData {
@@ -9,7 +8,6 @@ export interface NewCryptoEnveloppeData {
   prix_acquisition_cumule?: number;
   date_ouverture?: string;
   statut?: string;
-  line: { libelle: string; symbole: string; quantite: number; valeur_initiale: number; date: string };
 }
 
 interface Props {
@@ -25,10 +23,6 @@ export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Pro
   const [prixAcquisitionCumule, setPrixAcquisitionCumule] = useState('');
   const [dateOuverture, setDateOuverture] = useState('');
   const [statut, setStatut] = useState('Actif');
-  const [symbole, setSymbole] = useState('');
-  const [quantite, setQuantite] = useState('');
-  const [valeur, setValeur] = useState('');
-  const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,14 +35,6 @@ export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Pro
       setError('Libellé du portefeuille requis');
       return;
     }
-    if (!symbole.trim()) {
-      setError('Symbole du premier actif requis');
-      return;
-    }
-    if (!quantite) {
-      setError('Quantité du premier actif requise');
-      return;
-    }
     setSaving(true);
     setError(null);
     try {
@@ -59,13 +45,6 @@ export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Pro
         prix_acquisition_cumule: prixAcquisitionCumule ? Number(prixAcquisitionCumule) : undefined,
         date_ouverture: dateOuverture || undefined,
         statut: statut || undefined,
-        line: {
-          libelle: symbole.trim(),
-          symbole: symbole.trim(),
-          quantite: Number(quantite),
-          valeur_initiale: valeur ? Number(valeur) : 0,
-          date,
-        },
       });
     } catch (err) {
       setError((err as Error).message);
@@ -79,26 +58,24 @@ export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Pro
       <div className="create-panel">
         <div className="create-panel-head">
           <h3>Nouveau portefeuille — Crypto</h3>
-          <p>Un portefeuille par plateforme, avec son premier actif.</p>
+          <p>Un portefeuille par plateforme, sans premier actif — ajoutez-en un ensuite via « + Actif ».</p>
         </div>
 
-        {(
-          <div className="field-row">
-            <label>Entité</label>
-            <select
-              className="field-input"
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
-            >
-              <option value="">— Choisir —</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.libelle}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="field-row">
+          <label>Entité</label>
+          <select
+            className="field-input"
+            value={entityId}
+            onChange={(e) => setEntityId(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— Choisir —</option>
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.libelle}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="field-row">
           <label>Libellé du portefeuille</label>
           <input
@@ -138,23 +115,6 @@ export function CreateEnveloppeCryptoModal({ entities, onCancel, onCreate }: Pro
             <option value="Actif">Actif</option>
             <option value="Clôturé">Clôturé</option>
           </select>
-        </div>
-
-        <div className="field-row highlight">
-          <label>Premier actif — Symbole</label>
-          <input className="field-input" value={symbole} onChange={(e) => setSymbole(e.target.value)} placeholder="ex. BTC, ETH…" />
-        </div>
-        <div className="field-row">
-          <label>Quantité</label>
-          <input className="field-input" type="number" value={quantite} onChange={(e) => setQuantite(e.target.value)} />
-        </div>
-        <div className="field-row highlight">
-          <label>Date de la valorisation</label>
-          <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <div className="field-row">
-          <label>Valeur actuelle</label>
-          <input className="field-input" type="number" value={valeur} onChange={(e) => setValeur(e.target.value)} />
         </div>
 
         {error && <div className="error-banner" style={{ margin: '0 22px 12px' }}>{error}</div>}

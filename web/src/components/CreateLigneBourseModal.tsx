@@ -6,9 +6,8 @@ export interface NewBourseLigneData {
   libelle: string;
   isin?: string;
   quantite?: number;
-  cout_acquisition_unitaire?: number;
-  valeur_initiale: number;
-  date: string;
+  cout_acquisition_unitaire: number;
+  date_achat: string;
 }
 
 interface Props {
@@ -18,15 +17,15 @@ interface Props {
 }
 
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
-const COUT_LABEL = (type: BourseEnvelope['type']) => (type === 'CTO' ? 'Prix de revient moyen pondéré' : 'Coût d’acquisition');
+const COUT_LABEL = (type: BourseEnvelope['type']) =>
+  type === 'CTO' ? 'Prix de revient moyen pondéré unitaire' : 'Coût d’acquisition unitaire';
 
 export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) {
   const [libelle, setLibelle] = useState('');
   const [isin, setIsin] = useState('');
   const [quantite, setQuantite] = useState('');
   const [coutAcquisition, setCoutAcquisition] = useState('');
-  const [valeur, setValeur] = useState('');
-  const [date, setDate] = useState(today());
+  const [dateAchat, setDateAchat] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +42,10 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
       setError('Quantité requise');
       return;
     }
+    if (!coutAcquisition) {
+      setError(`${COUT_LABEL(envelope.type)} requis`);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -50,9 +53,8 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
         libelle: libelle.trim(),
         isin: isin.trim() || undefined,
         quantite: quantite ? Number(quantite) : undefined,
-        cout_acquisition_unitaire: coutAcquisition ? Number(coutAcquisition) : undefined,
-        valeur_initiale: valeur ? Number(valeur) : 0,
-        date,
+        cout_acquisition_unitaire: Number(coutAcquisition),
+        date_achat: dateAchat,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -66,7 +68,7 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
       <div className="create-panel">
         <div className="create-panel-head">
           <h3>Nouveau titre — {envelope.libelle}</h3>
-          <p>Ajoute une Ligne-titre directement dans cette Enveloppe.</p>
+          <p>Ajoute une Ligne-titre directement dans ce compte.</p>
         </div>
 
         <div className="field-row highlight">
@@ -92,7 +94,7 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
           <label>Quantité</label>
           <input className="field-input" type="number" value={quantite} onChange={(e) => setQuantite(e.target.value)} />
         </div>
-        <div className="field-row">
+        <div className="field-row highlight">
           <label>{COUT_LABEL(envelope.type)}</label>
           <input
             className="field-input"
@@ -101,13 +103,9 @@ export function CreateLigneBourseModal({ envelope, onCancel, onCreate }: Props) 
             onChange={(e) => setCoutAcquisition(e.target.value)}
           />
         </div>
-        <div className="field-row highlight">
-          <label>Date de la valorisation</label>
-          <input className="field-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
         <div className="field-row">
-          <label>Valeur actuelle</label>
-          <input className="field-input" type="number" value={valeur} onChange={(e) => setValeur(e.target.value)} />
+          <label>Date d’achat</label>
+          <input className="field-input" type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)} />
         </div>
 
         {error && <div className="error-banner" style={{ margin: '0 22px 12px' }}>{error}</div>}

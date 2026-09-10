@@ -138,6 +138,11 @@ export function PeScpiDashboard({ entities, notify }: Props) {
                     </button>
                   </span>
                 </div>
+                {envelope.lines.length === 0 && (
+                  <div className="empty-state" style={{ padding: '10px 20px' }}>
+                    Aucune part pour l’instant — ajoutez-en une via « + Part ».
+                  </div>
+                )}
                 {envelope.lines.map((line) => {
                   const isOpen = openLineId === line.id;
                   return (

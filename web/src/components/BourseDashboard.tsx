@@ -84,7 +84,7 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
     api.bourse
       .listEnvelopes('all')
       .then(setEnvelopes)
-      .catch(() => notify('Erreur de chargement des Enveloppes', true));
+      .catch(() => notify('Erreur de chargement des comptes', true));
   };
 
   useEffect(load, []);
@@ -126,14 +126,14 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
 
   const createEnveloppe = async (data: NewEnveloppeData) => {
     await api.bourse.createEnvelope(data);
-    notify('Nouvelle Enveloppe créée');
+    notify('Nouveau compte créé');
     setShowCreateEnveloppe(false);
     load();
   };
 
   const createLigne = async (envelope: BourseEnvelope, data: NewBourseLigneData) => {
     await api.bourse.createLine(envelope.id, data);
-    notify('Titre ajouté à l’Enveloppe');
+    notify('Titre ajouté au compte');
     setAddLigneEnvelope(null);
     load();
   };
@@ -142,7 +142,7 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
     if (!editingEnvelope) return;
     try {
       await api.bourse.updateEnvelope(editingEnvelope.id, data);
-      notify('Enveloppe mise à jour');
+      notify('Compte mis à jour');
       setEditingEnvelope(null);
       load();
     } catch (err) {
@@ -175,10 +175,10 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
   };
 
   const deleteEnveloppe = async (envelope: BourseEnvelope) => {
-    if (!window.confirm(`Supprimer l’Enveloppe « ${envelope.libelle} » et tous ses titres ?`)) return;
+    if (!window.confirm(`Supprimer le compte « ${envelope.libelle} » et tous ses titres ?`)) return;
     try {
       await api.bourse.deleteEnvelope(envelope.id);
-      notify('Enveloppe supprimée', true);
+      notify('Compte supprimé', true);
       setOpenLineId(null);
       load();
     } catch (err) {
@@ -199,7 +199,7 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
         {envelopes === null ? (
           <div className="empty-state">Chargement…</div>
         ) : envelopes.length === 0 ? (
-          <div className="empty-state">Aucune Enveloppe Bourse pour le moment.</div>
+          <div className="empty-state">Aucun compte Bourse pour le moment.</div>
         ) : (
           envelopes.map((envelope) => {
             const entity = entities.find((e) => e.id === envelope.entity_id);
@@ -255,6 +255,11 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
                   <span style={{ textAlign: 'right' }}>PV %</span>
                   <span />
                 </div>
+                {envelope.lines.filter((l) => !l.est_compte_especes).length === 0 && (
+                  <div className="empty-state" style={{ padding: '10px 20px' }}>
+                    Aucun titre pour l’instant — ajoutez-en un via « + Titre ».
+                  </div>
+                )}
                 {envelope.lines.map((line) => {
                   const isOpen = openLineId === line.id;
                   const pv = plusValue(line);
@@ -329,8 +334,8 @@ export function BourseDashboard({ entities, notify, onDomainAction }: Props) {
                               Modifier le titre
                             </button>
                             {line.est_compte_especes ? (
-                              <span className="muted-hint" title="Le compte espèces ne se supprime pas seul — supprimez l’Enveloppe pour le retirer.">
-                                Le compte espèces se supprime avec l’Enveloppe
+                              <span className="muted-hint" title="Le compte espèces ne se supprime pas seul — supprimez le compte pour le retirer.">
+                                Le compte espèces se supprime avec le compte
                               </span>
                             ) : (
                               <button

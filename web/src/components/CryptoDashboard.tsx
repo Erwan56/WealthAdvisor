@@ -138,6 +138,11 @@ export function CryptoDashboard({ entities, notify }: Props) {
                     </button>
                   </span>
                 </div>
+                {envelope.lines.length === 0 && (
+                  <div className="empty-state" style={{ padding: '10px 20px' }}>
+                    Aucun actif pour l’instant — ajoutez-en un via « + Actif ».
+                  </div>
+                )}
                 {envelope.lines.map((line) => {
                   const isOpen = openLineId === line.id;
                   return (

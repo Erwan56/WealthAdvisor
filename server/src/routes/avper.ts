@@ -118,8 +118,11 @@ avPerRouter.get('/envelopes', (req, res) => {
 });
 
 // POST /api/av-per/envelopes — creates an Enveloppe (contrat) and its first support Ligne (PRD §3.4).
+// Creates the contrat alone, sans premier support (refonte-saisie-patrimoine,
+// ticket 07) : le premier support se saisit ensuite via POST /envelopes/:id/lines,
+// comme tout support suivant.
 avPerRouter.post('/envelopes', (req, res) => {
-  const { entity_id, libelle, type, date_ouverture, statut, line } = req.body ?? {};
+  const { entity_id, libelle, type, date_ouverture, statut } = req.body ?? {};
 
   if (!entity_id || !libelle || typeof libelle !== 'string') {
     return res.status(400).json({ error: 'entity_id et libelle requis' });
@@ -127,20 +130,11 @@ avPerRouter.post('/envelopes', (req, res) => {
   if (!ENVELOPE_TYPES.includes(type)) {
     return res.status(400).json({ error: `type doit être l'un de ${ENVELOPE_TYPES.join(', ')}` });
   }
-  if (!line || !line.libelle || typeof line.libelle !== 'string') {
-    return res.status(400).json({ error: 'line.libelle requis (premier support du contrat)' });
-  }
-  if (line.type_support !== undefined && line.type_support !== null && !SUPPORT_TYPES.includes(line.type_support)) {
-    return res.status(400).json({ error: `line.type_support doit être l'un de ${SUPPORT_TYPES.join(', ')}` });
-  }
 
   const entity = db.prepare('SELECT id FROM entities WHERE id = ?').get(entity_id);
   if (!entity) {
     return res.status(404).json({ error: 'Entité introuvable' });
   }
-
-  const valDate = line.date || new Date().toISOString().slice(0, 10);
-  const valeur = typeof line.valeur_initiale === 'number' ? line.valeur_initiale : Number(line.valeur_initiale) || 0;
 
   const envelopeId = db.transaction(() => {
     const envInfo = db
@@ -152,16 +146,6 @@ avPerRouter.post('/envelopes', (req, res) => {
     const envId = envInfo.lastInsertRowid as number;
 
     db.prepare('INSERT INTO envelope_av_per (envelope_id, type) VALUES (?, ?)').run(envId, type);
-
-    insertSupportLine({
-      entityId: entity_id,
-      envelopeId: envId,
-      libelle: line.libelle,
-      nomSupport: line.nom_support ?? line.libelle,
-      typeSupport: line.type_support,
-      valeur,
-      date: valDate,
-    });
 
     return envId;
   })();
