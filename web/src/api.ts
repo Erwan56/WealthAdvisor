@@ -24,6 +24,7 @@ import type {
   PeScpiLine,
   Profil,
   QuestionnaireQuestion,
+  ReferenceListItem,
   ReportingDomainDetail,
   ReportingSummary,
   RisqueBucket,
@@ -47,9 +48,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   entities: {
     list: () => request<Entity[]>('/entities'),
-    create: (data: { libelle: string; type: EntityType }) =>
+    create: (data: { libelle: string; type: EntityType; charges_fixes_professionnelles?: number }) =>
       request<Entity>('/entities', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: { libelle: string; type: EntityType; charges_fixes_professionnelles?: number | null }) =>
+      request<Entity>(`/entities/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request<void>(`/entities/${id}`, { method: 'DELETE' }),
+  },
+  banques: {
+    list: () => request<ReferenceListItem[]>('/banques'),
+    create: (libelle: string) => request<ReferenceListItem>('/banques', { method: 'POST', body: JSON.stringify({ libelle }) }),
+    update: (id: number, libelle: string) =>
+      request<ReferenceListItem>(`/banques/${id}`, { method: 'PUT', body: JSON.stringify({ libelle }) }),
+    delete: (id: number) => request<void>(`/banques/${id}`, { method: 'DELETE' }),
+  },
+  typesCompte: {
+    list: () => request<ReferenceListItem[]>('/types-compte-liquidites'),
+    create: (libelle: string) =>
+      request<ReferenceListItem>('/types-compte-liquidites', { method: 'POST', body: JSON.stringify({ libelle }) }),
+    update: (id: number, libelle: string) =>
+      request<ReferenceListItem>(`/types-compte-liquidites/${id}`, { method: 'PUT', body: JSON.stringify({ libelle }) }),
+    delete: (id: number) => request<void>(`/types-compte-liquidites/${id}`, { method: 'DELETE' }),
   },
   liquidites: {
     listLines: (entityId: number | 'all') =>

@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrate } from './db/client.js';
 import { avPerRouter } from './routes/avper.js';
+import { banquesRouter } from './routes/banques.js';
 import { bourseRouter } from './routes/bourse.js';
 import { conseilsRouter } from './routes/conseils.js';
 import { cryptoRouter } from './routes/crypto.js';
@@ -15,6 +16,7 @@ import { objectifsRouter } from './routes/objectifs.js';
 import { peScpiRouter } from './routes/peScpi.js';
 import { profilRouter } from './routes/profil.js';
 import { reportingRouter } from './routes/reporting.js';
+import { typesCompteLiquiditesRouter } from './routes/typesCompteLiquidites.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +27,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/entities', entitiesRouter);
+app.use('/api/banques', banquesRouter);
+app.use('/api/types-compte-liquidites', typesCompteLiquiditesRouter);
 app.use('/api/liquidites', liquiditesRouter);
 app.use('/api/bourse', bourseRouter);
 app.use('/api/immobilier', immobilierRouter);

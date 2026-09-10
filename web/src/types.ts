@@ -8,6 +8,13 @@ export interface Entity {
   charges_fixes_professionnelles: number | null;
 }
 
+// Une valeur de liste de référence éditable depuis Configuration globale
+// (Banques, Types de compte Liquidités) — voir ticket 05.
+export interface ReferenceListItem {
+  id: number;
+  libelle: string;
+}
+
 export interface LiquiditeLine {
   id: number;
   entity_id: number;
@@ -46,6 +53,7 @@ export interface BourseLine {
   quantite: number | null;
   cout_acquisition_unitaire: number | null;
   est_compte_especes: 0 | 1;
+  date_achat: string | null;
 }
 
 export interface BourseEnvelope {
@@ -85,6 +93,13 @@ export interface ImmobilierLine {
   rendement_net: number | null;
   cash_flow_mensuel: number | null;
   cash_flow_annuel: number | null;
+  // Prêt immobilier (ticket 10) — optionnel. Dès configuré, capital_restant_du
+  // et mensualite ci-dessus sont calculés à la volée depuis ces 4 champs
+  // plutôt que lus depuis la dernière Valorisation stockée.
+  capital_emprunte_initial: number | null;
+  taux_annuel: number | null;
+  duree_mois: number | null;
+  date_depart: string | null;
 }
 
 export interface ImmobilierValorisation extends Valorisation {

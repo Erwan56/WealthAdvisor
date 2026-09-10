@@ -26,6 +26,31 @@ entitiesRouter.post('/', (req, res) => {
   res.status(201).json(entity);
 });
 
+entitiesRouter.put('/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM entities WHERE id = ?').get(id);
+  if (!existing) {
+    return res.status(404).json({ error: 'Entité introuvable' });
+  }
+
+  const { libelle, type, charges_fixes_professionnelles } = req.body ?? {};
+  if (!libelle || typeof libelle !== 'string') {
+    return res.status(400).json({ error: 'libelle requis' });
+  }
+  if (type !== 'personnelle' && type !== 'activite_service' && type !== 'detention_immobiliere') {
+    return res
+      .status(400)
+      .json({ error: "type doit être 'personnelle', 'activite_service' ou 'detention_immobiliere'" });
+  }
+
+  db.prepare(
+    'UPDATE entities SET libelle = ?, type = ?, charges_fixes_professionnelles = ? WHERE id = ?'
+  ).run(libelle, type, charges_fixes_professionnelles ?? null, id);
+
+  const entity = db.prepare('SELECT * FROM entities WHERE id = ?').get(id);
+  res.json(entity);
+});
+
 const LINE_DOMAIN_TABLES: Record<string, string> = {
   liquidites: 'line_liquidites',
   bourse: 'line_bourse',
