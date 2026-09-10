@@ -20,6 +20,7 @@ export function migrate(): void {
   db.exec(schema);
   migrateObjectifsLienNullable();
   migrateLineBourseRename();
+  migrateAddColumns();
   seed();
 }
 
@@ -64,6 +65,48 @@ function migrateLineBourseRename(): void {
   }
 }
 
+// `line_bourse.date_achat` et les 4 champs Prêt immobilier de `line_immobilier`
+// (refonte-saisie-patrimoine, tickets 08/10) sont ajoutés à des tables déjà
+// créées chez un utilisateur existant — `CREATE TABLE IF NOT EXISTS` ne les
+// retrofit pas, d'où cet `ALTER TABLE ... ADD COLUMN` idempotent (contrairement
+// à migrateObjectifsLienNullable, un simple ajout de colonne nullable ne
+// nécessite pas de reconstruire la table).
+function migrateAddColumns(): void {
+  addColumnIfMissing('line_bourse', 'date_achat', 'TEXT');
+  addColumnIfMissing('line_immobilier', 'capital_emprunte_initial', 'REAL');
+  addColumnIfMissing('line_immobilier', 'taux_annuel', 'REAL');
+  addColumnIfMissing('line_immobilier', 'duree_mois', 'INTEGER');
+  addColumnIfMissing('line_immobilier', 'date_depart', 'TEXT');
+}
+
+function addColumnIfMissing(table: string, column: string, type: string): void {
+  const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+  if (!columns.includes(column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
+}
+
+const BANQUES_PAR_DEFAUT = [
+  'BNP Paribas',
+  'Crédit Agricole',
+  'Société Générale',
+  'LCL',
+  'Banque Postale',
+  "Caisse d'Épargne",
+  'Crédit Mutuel',
+  'CIC',
+  'Banque Populaire',
+  'HSBC Continental Europe',
+  'BoursoBank',
+  'Fortuneo',
+  'Hello bank!',
+  'Monabanq',
+  'Revolut',
+  'N26',
+];
+
+const TYPES_COMPTE_PAR_DEFAUT = ['Compte courant', 'Livret A', 'LDDS', 'LEP', 'Compte à terme', 'Autre'];
+
 function seed(): void {
   const perso = db.prepare('SELECT id FROM entities WHERE type = ? AND locked = 1').get('personnelle');
   if (!perso) {
@@ -78,4 +121,10 @@ function seed(): void {
       'INSERT INTO profil (id, mois_reserve_visees) VALUES (1, 6)'
     ).run();
   }
+
+  const insertBanque = db.prepare('INSERT OR IGNORE INTO banques (libelle) VALUES (?)');
+  for (const libelle of BANQUES_PAR_DEFAUT) insertBanque.run(libelle);
+
+  const insertTypeCompte = db.prepare('INSERT OR IGNORE INTO types_compte_liquidites (libelle) VALUES (?)');
+  for (const libelle of TYPES_COMPTE_PAR_DEFAUT) insertTypeCompte.run(libelle);
 }

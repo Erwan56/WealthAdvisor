@@ -16,6 +16,19 @@ CREATE TABLE IF NOT EXISTS entities (
 );
 
 -- ---------------------------------------------------------------------
+-- Configuration globale — listes de référence éditables (ticket 05)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS banques (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  libelle TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS types_compte_liquidites (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  libelle TEXT NOT NULL UNIQUE
+);
+
+-- ---------------------------------------------------------------------
 -- Profil (ligne unique, id=1)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS profil (
@@ -118,11 +131,19 @@ CREATE TABLE IF NOT EXISTS line_liquidites (
 );
 
 CREATE TABLE IF NOT EXISTS line_immobilier (
-  line_id                 INTEGER PRIMARY KEY REFERENCES lines(id),
-  prix_acquisition_total  REAL,
-  date_acquisition        TEXT,
-  residence_principale    INTEGER NOT NULL DEFAULT 0,
-  regime_location         TEXT
+  line_id                    INTEGER PRIMARY KEY REFERENCES lines(id),
+  prix_acquisition_total     REAL,
+  date_acquisition           TEXT,
+  residence_principale       INTEGER NOT NULL DEFAULT 0,
+  regime_location            TEXT,
+  -- Prêt immobilier (ticket 10) — optionnel, porté par la Ligne. Dès qu'il est
+  -- configuré, capital restant dû et mensualité cessent d'être des champs
+  -- stockés par Valorisation et deviennent calculés à la volée (voir
+  -- server/src/domain/pretImmobilier.ts).
+  capital_emprunte_initial   REAL,
+  taux_annuel                REAL,
+  duree_mois                 INTEGER,
+  date_depart                TEXT
 );
 
 CREATE TABLE IF NOT EXISTS line_bourse (
@@ -130,7 +151,8 @@ CREATE TABLE IF NOT EXISTS line_bourse (
   isin                       TEXT,
   quantite                   REAL,
   cout_acquisition_unitaire  REAL,
-  est_compte_especes         INTEGER NOT NULL DEFAULT 0
+  est_compte_especes         INTEGER NOT NULL DEFAULT 0,
+  date_achat                 TEXT
 );
 
 CREATE TABLE IF NOT EXISTS line_av_per (
